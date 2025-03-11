@@ -33,92 +33,108 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const fs = __importStar(require("fs-extra"));
 const path = __importStar(require("path"));
+const chalk_1 = __importDefault(require("chalk"));
 const args = process.argv.slice(2);
-if (args.length === 0) {
-    console.log('Kullanım: aper <templateAdı>, aper install <templateAdı> veya naper install <paketAdı>');
-    process.exit(1);
-}
-if (args[0] === 'install') {
+const version = "v0.0.1";
+const displayUsage = () => {
+    console.log('\x1b[33mUsage:\x1b[0m aper install <name>\n');
+    console.log('\x1b[1mAperture Labs.\x1b[0m');
+};
+const displayHelp = () => {
+    console.log("\n" + chalk_1.default.bold.blue('📖 APER COMMAND GUIDE') + "\n");
+    console.log(chalk_1.default.yellow('  ➜  ') + chalk_1.default.cyan('aper install <module>') + chalk_1.default.gray('   # Installs a new module.'));
+    console.log(chalk_1.default.yellow('  ➜  ') + chalk_1.default.cyan('aper version') + chalk_1.default.gray('         # Displays the current version.'));
+    console.log(chalk_1.default.yellow('  ➜  ') + chalk_1.default.cyan('aper help') + chalk_1.default.gray('            # Shows the help menu.'));
+    console.log("\n" + chalk_1.default.green('For more information: ') + chalk_1.default.underline.cyan('https://github.com/yigitkabak/aperium'));
+};
+const installTemplate = async (templateName) => {
+    const packageName = 'aperium';
+    const packagePath = path.join(process.cwd(), 'node_modules', packageName);
+    const templatesDir = path.join(packagePath, 'temps');
+    const templatePath = path.join(templatesDir, templateName);
+    const targetFolder = path.join(process.cwd(), templateName);
+    if (!fs.existsSync(templatesDir)) {
+        console.error(`❌ Error: The "temps" folder inside the package was not found: ${templatesDir}`);
+        process.exit(1);
+    }
+    if (!fs.existsSync(templatePath)) {
+        console.error(`❌ Error: Template "${templateName}" was not found in the "temps" folder of the "aperium" module.`);
+        process.exit(1);
+    }
+    if (fs.existsSync(targetFolder)) {
+        console.error(`⚠️ Error: "${targetFolder}" already exists. Please use a different name.`);
+        process.exit(1);
+    }
+    fs.ensureDirSync(targetFolder);
+    try {
+        await fs.copy(templatePath, targetFolder);
+        console.log(`✅ "${templateName}" was successfully copied to "${targetFolder}".`);
+    }
+    catch (err) {
+        console.error('🚨 An error occurred:', err);
+        process.exit(1);
+    }
+};
+const installAllTemplates = async () => {
     const packageName = 'aperium';
     const packagePath = path.join(process.cwd(), 'node_modules', packageName);
     const templatesDir = path.join(packagePath, 'temps');
     if (!fs.existsSync(templatesDir)) {
-        console.error(`❌ Hata: Paket içindeki "temps" klasörü bulunamadı: ${templatesDir}`);
+        console.error(`❌ Error: The "temps" folder inside the package was not found: ${templatesDir}`);
         process.exit(1);
     }
-    if (args.length > 1) {
-        const templateName = args[1];
-        const templatePath = path.join(templatesDir, templateName);
-        const targetFolder = path.join(process.cwd(), templateName);
-        console.log(`🔍 Şablon yolu: ${templatePath}`);
-        if (!fs.existsSync(templatePath)) {
-            console.error(`❌ Hata: "${templateName}" isimli template, "aperium" modülünün içindeki "temps" klasöründe bulunamadı.`);
-            process.exit(1);
-        }
-        if (fs.existsSync(targetFolder)) {
-            console.error(`⚠️ Hata: "${targetFolder}" zaten var. Farklı bir ad kullan.`);
-            process.exit(1);
-        }
-        fs.ensureDirSync(targetFolder);
-        fs.copy(templatePath, targetFolder)
-            .then(() => console.log(`✅ "${templateName}" başarıyla "${targetFolder}" dizinine kopyalandı.`))
-            .catch((err) => {
-            console.error('🚨 Hata oluştu:', err);
-            process.exit(1);
-        });
-    }
-    else {
-        console.log('🔍 Tüm şablonlar indiriliyor...');
-        fs.readdir(templatesDir, (err, files) => {
-            if (err) {
-                console.error('❌ Şablonlar alınırken hata oluştu:', err);
+    try {
+        const files = await fs.readdir(templatesDir);
+        for (const templateName of files) {
+            const templatePath = path.join(templatesDir, templateName);
+            const targetFolder = path.join(process.cwd(), templateName);
+            if (fs.existsSync(targetFolder)) {
+                console.log(`⚠️ "${templateName}" already exists, skipping.`);
+                continue;
+            }
+            fs.ensureDirSync(targetFolder);
+            try {
+                await fs.copy(templatePath, targetFolder);
+                console.log(`✅ "${templateName}" was successfully copied to "${targetFolder}".`);
+            }
+            catch (err) {
+                console.error('🚨 An error occurred:', err);
                 process.exit(1);
             }
-            files.forEach((templateName) => {
-                const templatePath = path.join(templatesDir, templateName);
-                const targetFolder = path.join(process.cwd(), templateName);
-                if (fs.existsSync(targetFolder)) {
-                    console.log(`⚠️ "${templateName}" zaten var, atlanıyor.`);
-                    return;
-                }
-                fs.ensureDirSync(targetFolder);
-                fs.copy(templatePath, targetFolder)
-                    .then(() => console.log(`✅ "${templateName}" başarıyla "${targetFolder}" dizinine kopyalandı.`))
-                    .catch((err) => {
-                    console.error('🚨 Hata oluştu:', err);
-                    process.exit(1);
-                });
-            });
-        });
+        }
+    }
+    catch (err) {
+        console.error('❌ Error retrieving templates:', err);
+        process.exit(1);
+    }
+};
+if (args.length === 0) {
+    displayUsage();
+    process.exit(0);
+}
+if (args[0] === 'version') {
+    console.log(`Aper ${version}`);
+    process.exit(0);
+}
+if (args[0] === 'help') {
+    displayHelp();
+    process.exit(0);
+}
+if (args[0] === 'install') {
+    if (args.length > 1) {
+        installTemplate(args[1]);
+    }
+    else {
+        console.log('🔍 Downloading all templates...');
+        installAllTemplates();
     }
     process.exit(0);
 }
-const packageName = 'aperium';
-const packagePath = path.join(process.cwd(), 'node_modules', packageName);
-const templatesDir = path.join(packagePath, 'temps');
-const templateName = args[0];
-const templatePath = path.join(templatesDir, templateName);
-const targetFolder = path.join(process.cwd(), templateName);
-console.log(`🔍 Şablon yolu: ${templatePath}`);
-if (!fs.existsSync(templatesDir)) {
-    console.error(`❌ Hata: Paket içindeki "temps" klasörü bulunamadı: ${templatesDir}`);
-    process.exit(1);
-}
-if (!fs.existsSync(templatePath)) {
-    console.error(`❌ Hata: "${templateName}" isimli template, "aperium" modülünün içindeki "temps" klasöründe bulunamadı.`);
-    process.exit(1);
-}
-if (fs.existsSync(targetFolder)) {
-    console.error(`⚠️ Hata: "${targetFolder}" zaten var. Farklı bir ad kullan.`);
-    process.exit(1);
-}
-fs.ensureDirSync(targetFolder);
-fs.copy(templatePath, targetFolder)
-    .then(() => console.log(`✅ "${templateName}" başarıyla "${targetFolder}" dizinine kopyalandı.`))
-    .catch((err) => {
-    console.error('🚨 Hata oluştu:', err);
-    process.exit(1);
-});
+console.error('❌ Error: Invalid command.');
+process.exit(1);
