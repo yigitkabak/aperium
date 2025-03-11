@@ -1,40 +1,48 @@
-# Aperium: Modern Paket Yöneticisi.
+# Aperium: Modern Package Manager
 
-Aperium, Aperture Labs Ekosisteminin bir ürünüdür.
+Aperium is a product of the Aperture Labs Ecosystem.
 
-Aperium, sadece bir paket yükleyicisi değil, aynı zamanda geliştirdiğiniz ve paylaştığınız özel paketlerinizi de kolayca yönetebileceğiniz bir araçtır. Node.js ekosisteminde paket yükleme sürecini daha verimli, sade ve kullanıcı dostu hale getirmek için tasarlanmış bu araç, geliştiricilere hız kazandırır. Hem dışa bağımlı paketleri (npm üzerinden indirilen paketler) hem de kendi özel paketlerinizi indirmenize olanak tanır. Aperium ile yalnızca popüler açık kaynaklı paketleri değil, kendi projelerinizin modüllerini de sorunsuzca yükleyebilirsiniz.
+Aperium is not just a package installer but also a tool that allows you to easily manage the custom packages you develop and share. Designed to make the package installation process in the Node.js ecosystem more efficient, simple, and user-friendly, it helps developers save time. Aperium allows you to install both external dependencies (packages downloaded from npm) and your own custom packages. With Aperium, you can easily install not only popular open-source packages but also modules from your own projects.
 
-Aperium'a paket yüklemek için github repomuzdan çekme isteği olușturarak projenizi ekleyebilirsiniz.
+To upload a package to Aperium, you can create a pull request on our GitHub repository.
 
-## Projenin Temel Özellikleri:
+## Key Features of the Project:
 
-Aperium, yalnızca npm üzerindeki paketleri yüklemekle kalmaz, aynı zamanda kendi özel paketlerinizi de indirip projelere dahil etmenizi sağlar. aper komutu ile geliştirdiğiniz modülleri veya paylaşmak istediğiniz projeleri başkalarına yükleyebilirsiniz.
+Aperium doesn't just install packages from npm but also allows you to download and include your own custom packages in your projects. Using the aper command, you can upload modules that you've developed or projects you want to share with others.
 
-## Aperium’un Kullanımı:
+## How to Use Aperium:
 
-Aperium, iki ana komutla çalışır: naper ve aper. Bu komutlar farklı işlevleri yerine getirir.
+Aperium operates with two main commands: naper and aper. These commands serve different purposes.
 
+naper Command:
 ```bash
-naper install <paketAdı>
+naper install <packageName>
 ```
-
-
-Bu komut, dışa bağımlı paketleri npm üzerinden indirir. express, lodash gibi popüler paketleri yüklerken bu komutu kullanabilirsiniz.
-
+This command installs external dependencies from npm. You can use this command to install popular packages like express, lodash, etc.
 ```bash
 naper install express
 ```
-
-Bu komut çalıştırıldığında, sadece gerekli çıktılar gösterilecek ve gereksiz bilgiler gizlenecektir. Yükleme işlemi tamamlandıktan sonra, kullanıcıya başarı mesajı gösterilir:
-
+When this command is run, only the necessary output is displayed, and unnecessary information is hidden. After the installation is complete, a success message will be shown to the user:
 ```bash
-🔍 express paketi indiriliyor... ✅ express başarıyla indirildi.
+🔍 Installing express package... ✅ express has been successfully installed.
 ```
-<hr>
-Aper
 
-Aperium’un en güçlü özelliklerinden biri, kullanıcıların kendi geliştirdiği özel paketleri yükleyebilmesidir. aper komutu, sadece dışa bağımlı paketleri değil, aynı zamanda sizin geliştirdiğiniz ve paylaştığınız modülleri de projeye dahil etmenizi sağlar.
+---
 
+## Aper Command:
+
+One of the most powerful features of Aperium is that it allows users to install their custom-developed packages. The aper command enables you to include not only external dependencies but also your own developed and shared modules in your project.
 ```bash
-aper install <paketAdı>
+aper install <packageName>
 ```
+With this command, you can install your custom packages and share them with others. Once you develop a module or project, you can use aperium to upload and share it with other developers.
+
+By running this command, the following process occurs:
+
+The package is retrieved from the aperium repository.
+
+If successful, it’s copied to your project directory.
+
+The installation output will show the package name and success message.
+
+Use the ```aperium``` command for all information
