@@ -45,4 +45,23 @@ If successful, it’s copied to your project directory.
 
 The installation output will show the package name and success message.
 
-Use the ```aperium``` command for all information
+# What should you do to download it?
+
+First, you need to clone our GitHub repo.
+```bash
+git clone https://github.com/yigitkabak/aperium
+```
+secondly, you must download the npm modules.
+```bash
+cd aperium
+npm install express fs-extra multer typescript
+npm run build
+```
+Finally, you should download our npm package.
+```bash
+npm install aperium
+```
+
+That's all there is to it!
+
+## For more information, you can use the command ```aperium```.
