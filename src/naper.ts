@@ -12,7 +12,7 @@ if (args.length === 0) {
 
 switch (args[0]) {
   case 'version':
-    console.log('Naper v0.0.1');
+    console.log('Naper v0.0.6');
     break;
 
   case 'help':
@@ -24,6 +24,7 @@ switch (args[0]) {
     break;
 
   case 'install':
+  case 'i':
     if (args.length < 2) {
       console.error(chalk.red('❌ Error: Please specify the package name to install.'));
       process.exit(1);

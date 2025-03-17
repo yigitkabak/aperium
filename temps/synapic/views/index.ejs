@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synapic Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" 
+          integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" 
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        body {
+            background-color: #1e1e1e;
+        }
+
+        .gradient-button {
+            @apply text-gray-900 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 hover:bg-gradient-to-bl 
+            focus:ring-4 focus:outline-none focus:ring-yellow-400 dark:focus:ring-red-400 
+            font-medium rounded-lg text-sm px-5 py-2.5 text-center border-2 border-yellow-400;
+        }
+
+        .sidebar {
+            width: 50vw;
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            right: -50vw;
+            background: #2a2a2a;
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.2);
+            transition: right 0.3s ease-in-out;
+            z-index: 50;
+        }
+
+        /* Arama çubuğunu kapatmak için */
+        .hidden-search {
+            transform: translateY(-60px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .search-transition {
+            transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-center min-h-screen text-white relative">
+    
+    <div class="absolute top-4 right-4">
+        <button id="menuButton" class="text-white text-2xl focus:outline-none">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+    </div>
+
+    <div id="sidebar" class="sidebar p-6">
+    <button id="closeMenu" class="text-white text-2xl absolute top-4 right-4">
+        <i class="fa-solid fa-times"></i>
+    </button>
+
+    <div class="mt-10 text-white space-y-4"> <!-- space-y-4 butonlar arası boşluk bırakır -->
+        <a href="/manifesto">
+            <button id="manifestoButton" class="w-full flex items-center px-4 py-3 bg-gray-700 rounded-lg 
+                   hover:bg-gray-600 focus:ring-4 focus:ring-yellow-500">
+                <i class="fa-solid fa-book mr-3"></i> Manifesto
+            </button>
+        </a>
+
+        <a href="/iletisim">
+            <button id="contactButton" class="w-full flex items-center px-4 py-3 bg-gray-700 rounded-lg 
+                   hover:bg-gray-600 focus:ring-4 focus:ring-yellow-500 mt-4">
+                <i class="fa-solid fa-envelope mr-3"></i> İletişim
+            </button>
+        </a>
+    </div>
+    </div>
+
+    <div class="text-center mt-10">
+        <img src="https://raw.githubusercontent.com/devyigit/devyigit.github.io/refs/heads/main/%C4%B0mages/1738764999135.png" class="w-40 rounded-full" alt="Synapic">
+    </div>
+
+    <!-- Arama Kutusunu Saran Container -->
+    <div id="searchWrapper" class="mt-6 w-full max-w-lg search-transition">
+        <form id="searchForm" class="relative flex items-center" action="/search" method="GET">
+            <input type="text" id="searchQuery" name="query" placeholder="Hadi getirelim..." 
+                   class="w-full p-4 pl-12 pr-16 rounded-full bg-gray-800 text-white outline-none 
+                          focus:ring-2 focus:ring-yellow-500" required>
+            <i class="fa-solid fa-magnifying-glass absolute left-4 text-gray-400"></i>
+            <button type="button" id="voiceSearch" class="absolute right-12 text-yellow-500">
+                <i class="fa-solid fa-microphone"></i>
+            </button>
+            <button type="submit" class="absolute right-4 text-yellow-500">
+                <i class="fa-solid fa-search"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="mt-4 w-full max-w-lg flex justify-center space-x-3">
+        <button type="button" id="webSearch" class="text-white bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-yellow-300 dark:focus:ring-yellow-800 shadow-lg shadow-yellow-500/50 dark:shadow-lg dark:shadow-yellow-800/80 font-medium rounded-lg text-xs px-3 py-1.5 text-center me-2 mb-2">
+            <i class="fa-solid fa-globe mr-2"></i> Web
+        </button>
+        <button type="button" id="imageSearch" class="text-white bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-yellow-300 dark:focus:ring-yellow-800 shadow-lg shadow-yellow-500/50 dark:shadow-lg dark:shadow-yellow-800/80 font-medium rounded-lg text-xs px-3 py-1.5 text-center me-2 mb-2">
+            <i class="fa-solid fa-image mr-2"></i> Görseller
+        </button>
+        <button type="button" id="shoppingSearch" class="text-white bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-yellow-300 dark:focus:ring-yellow-800 shadow-lg shadow-yellow-500/50 dark:shadow-lg dark:shadow-yellow-800/80 font-medium rounded-lg text-xs px-3 py-1.5 text-center me-2 mb-2">
+            <i class="fa-solid fa-cart-shopping mr-2"></i> Alışveriş
+        </button>
+    </div>
+
+    <script>
+        const sidebar = document.getElementById("sidebar");
+        const searchWrapper = document.getElementById("searchWrapper");
+        
+        document.getElementById("menuButton").addEventListener("click", function () {
+            sidebar.style.right = "0";
+            searchWrapper.classList.add("hidden-search"); // Arama kutusunu gizle
+        });
+
+        document.getElementById("closeMenu").addEventListener("click", function () {
+            sidebar.style.right = "-50vw";
+            searchWrapper.classList.remove("hidden-search"); // Arama kutusunu geri getir
+        });
+
+        function performSearch(type) {
+            const query = document.getElementById("searchQuery").value.trim();
+            let url = `/search?type=${type}`;
+            if (query) {
+                url += `&query=${encodeURIComponent(query)}`; // query parametresini URL'ye ekle
+            }
+            window.location.href = url;
+        }
+
+        document.getElementById("webSearch").addEventListener("click", () => performSearch("web"));
+        document.getElementById("imageSearch").addEventListener("click", () => performSearch("images"));
+        document.getElementById("shoppingSearch").addEventListener("click", () => performSearch("shopping"));
+
+        const voiceButton = document.getElementById("voiceSearch");
+
+        voiceButton.addEventListener("click", () => {
+            const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = "tr-TR"; 
+            recognition.start();
+
+            recognition.onresult = (event) => {
+                document.getElementById("searchQuery").value = event.results[0][0].transcript;
+            };
+
+            recognition.onerror = (event) => {
+                console.error("Sesli arama hatası:", event.error);
+            };
+        });
+    </script>
+</body>
+</html>

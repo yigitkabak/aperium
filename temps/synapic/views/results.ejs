@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arama Sonuçları - Synapic Search</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" 
+          integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" 
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body { background-color: #1e1e1e; color: white; }
+        .active-tab { background-color: #f59e0b; color: black; }
+        .result-card { background-color: #2a2a2a; border-radius: 10px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        .modal img {
+            max-width: 80%;
+            max-height: 80%;
+            border-radius: 10px;
+        }
+        .modal p {
+            color: white;
+            margin-top: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        @media (max-width: 640px) {
+            .w-40 { width: 80px; height: 80px; }
+            .flex-col { flex-direction: column; }
+            .space-x-4 { margin-bottom: 10px; margin-right: 0; }
+            .grid-cols-2 { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center min-h-screen">
+    <div class="text-center mt-10 w-full max-w-lg">
+        <div class="flex flex-col items-center mb-6">
+            <a href="/"><img src="https://raw.githubusercontent.com/devyigit/devyigit.github.io/refs/heads/main/%C4%B0mages/1738764999135.png" class="w-40 h-40 rounded-full mx-auto" alt="Synapic"></a>
+        </div>
+        <form method="GET" action="/search">
+            <div class="relative flex items-center mb-8">
+                <input type="text" name="query" value="<%= query %>" placeholder="Yeni arama..." 
+                       class="w-full p-4 pl-12 rounded-full bg-gray-800 text-white outline-none focus:ring-2 focus:ring-yellow-500" />
+                <i class="fa-solid fa-magnifying-glass absolute left-4 text-gray-400"></i>
+            </div>
+            <div class="flex flex-wrap justify-center space-x-4">
+                <button type="submit" name="type" value="web" 
+                        class="px-6 py-2 rounded-full border-2 border-gray-500 text-white hover:bg-gray-700 <%= type === 'web' ? 'active-tab' : '' %>">
+                    Web
+                </button>
+                <button type="submit" name="type" value="images" 
+                        class="px-6 py-2 rounded-full border-2 border-gray-500 text-white hover:bg-gray-700 <%= type === 'images' ? 'active-tab' : '' %>">
+                    Görseller
+                </button>
+                <button type="submit" name="type" value="shopping" 
+                        class="px-6 py-2 rounded-full border-2 border-gray-500 text-white hover:bg-gray-700 <%= type === 'shopping' ? 'active-tab' : '' %>">
+                    Alışveriş
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="w-full max-w-lg px-4 mt-8">
+        <% if (type === 'web' && results.length > 0) { %>
+            <% results.forEach(result => { %>
+                <div class="result-card">
+                    <a href="<%= result.link %>" target="_blank" class="text-lg font-bold text-yellow-400 hover:underline"><%= result.title %></a>
+                    <p class="text-gray-300 mt-2"><%= result.snippet %></p>
+                </div>
+            <% }); %>
+        <% } else if (type === 'images' && images.length > 0) { %>
+            <div class="grid grid-cols-2 gap-4">
+                <% images.forEach(image => { %>
+                    <img src="<%= image.image %>" alt="Image" class="rounded-lg cursor-pointer" onclick="openModal('<%= image.image %>')">
+                <% }); %>
+            </div>
+        <% } else if (type === 'shopping' && shoppingResults.length > 0) { %>
+            <% shoppingResults.forEach(product => { %>
+                <div class="result-card">
+                    <a href="<%= product.link %>" target="_blank" class="text-lg font-bold text-yellow-400 hover:underline"><%= product.product %></a>
+                    <% if (product.image) { %>
+                        <img src="<%= product.image %>" alt="<%= product.product %>" class="rounded-lg mt-4">
+                    <% } %>
+                </div>
+            <% }); %>
+        <% } else { %>
+            <p class="text-center text-gray-400">Sonuç bulunamadı.</p>
+        <% } %>
+    </div>
+
+    <% if (results.length > 0 || images.length > 0 || shoppingResults.length > 0) { %>
+        <div class="flex justify-center mt-8">
+            <% let totalPages = 10; %>
+            <% for (let i = 1; i <= totalPages; i++) { %>
+                <a href="/search?query=<%= encodeURIComponent(query) %>&type=<%= type %>&start=<%= (i - 1) * 10 %>"
+                   class="mx-2 px-4 py-2 rounded-full <%= start === ((i - 1) * 10) ? 'bg-yellow-500 text-black' : 'bg-gray-700 text-white' %>">
+                    <%= i %>
+                </a>
+            <% } %>
+        </div>
+    <% } %>
+
+    <div id="imageModal" class="modal" onclick="closeModal()">
+        <img id="modalImage" src="" alt="Büyütülmüş Resim">
+        <p id="imageUrl"></p>
+    </div>
+
+    <script>
+        function openModal(imageUrl) {
+            document.getElementById("modalImage").src = imageUrl;
+            document.getElementById("imageUrl").textContent = imageUrl.replace("https://", "").replace("http://", "");
+            document.getElementById("imageModal").style.display = "flex";
+        }
+
+        function closeModal() {
+            document.getElementById("imageModal").style.display = "none";
+        }
+    </script>
+
+</body>
+</html>

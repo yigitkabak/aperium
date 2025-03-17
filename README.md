@@ -54,7 +54,7 @@ git clone https://github.com/yigitkabak/aperium
 secondly, you must download the npm modules.
 ```bash
 cd aperium
-npm install express fs-extra multer typescript
+npm install express fs-extra multer typescript ts-node
 npm run build
 ```
 Finally, you should download our npm package.
@@ -63,5 +63,17 @@ npm install aperium
 ```
 
 That's all there is to it!
+
+# Huh detaylar sistemi
+
+Aperture Labs. in diğer bir ürünü olan .huh dosya uzantısını aperium üzerinden kullanın.
+
+```bash
+huh file.huh
+```
+
+bu komut huh dosyanızın detaylı bir analizini çıkarıcaktır.
+<hr>
+
 
 ## For more information, you can use the command ```aperium```.

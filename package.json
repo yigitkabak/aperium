@@ -1,24 +1,27 @@
 {
   "name": "aperium",
-  "version": "0.0.1",
-  "description": "",
+  "version": "0.0.6",
+  "description": "Aperium: A lightweight package management CLI tool",
   "main": "dist/aperium.js",
   "bin": {
     "aper": "./dist/aper.js",
     "naper": "./dist/naper.js",
-    "aperium": "./dist/aperium.js"
+    "aperium": "./dist/aperium.js",
+    "huh": "./dist/huh.js"
   },
   "scripts": {
     "build": "tsc; npm link",
     "aper": "npm run build && node dist/aper.js",
     "naper": "npm run build && node dist/naper.js",
-    "aperium": "npm run build && node dist/naper.js"
+    "aperium": "npm run build && node dist/naper.js",
+    "huh": "npm run build && node dist/huh.js"
   },
   "dependencies": {
     "chalk": "^5.4.1",
     "express": "^4.21.2",
     "fs-extra": "^10.1.0",
     "multer": "^1.4.4",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
     "unzipper": "^0.10.14"
   },
@@ -27,5 +30,24 @@
     "@types/fs-extra": "^9.0.13",
     "@types/multer": "^1.4.12",
     "@types/node": "^18.19.80"
-  }
+  },
+  "keywords": [
+    "aperium",
+    "aper",
+    "naper",
+    "cli",
+    "package-manager",
+    "typescript",
+    "npm"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yigitkabak/aperium"
+  },
+  "author": "Yiğit Kabak",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/yigitkabak/aperium"
+  },
+  "homepage": "https://github.com/yigitkabak/aperium#readme"
 }

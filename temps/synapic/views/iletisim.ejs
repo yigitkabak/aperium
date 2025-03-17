@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>İletişim</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css"
+          integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg=="
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        body {
+            background-color: #1e1e1e;
+        }
+
+        .gradient-button {
+            @apply text-gray-900 bg-gradient-to-r from-red-200 via-red-300 to-yellow-200 hover:bg-gradient-to-bl 
+            focus:ring-4 focus:outline-none focus:ring-yellow-400 dark:focus:ring-red-400 
+            font-medium rounded-lg text-sm px-5 py-2.5 text-center border-2 border-yellow-400;
+        }
+
+        .contact-card {
+            background-color: #2a2a2a;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .contact-button {
+            @apply bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-600 hover:bg-gradient-to-br focus:ring-4 
+            focus:outline-none focus:ring-yellow-300 dark:focus:ring-yellow-800 shadow-lg shadow-yellow-500/50 dark:shadow-lg dark:shadow-yellow-800/80 
+            font-medium rounded-lg text-sm px-5 py-2.5 text-center;
+        }
+    </style>
+</head>
+<body class="text-white">
+    <div class="min-h-screen flex flex-col items-center justify-center p-8">
+        <!-- İletişim Başlığı -->
+        <div class="text-center">
+            <h1 class="text-4xl font-semibold mb-4">İletişim</h1>
+            <p class="text-lg mb-8">Bize ulaşmak için aşağıdaki iletişim formunu kullanabilirsiniz.</p>
+        </div>
+
+        <!-- İletişim Formu -->
+        <div class="contact-card w-full max-w-lg">
+            <form action="/contact" method="POST">
+                <div class="space-y-4">
+                    <input type="text" name="name" placeholder="Adınız" class="w-full p-4 rounded bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500" required>
+                    <input type="email" name="email" placeholder="E-posta Adresiniz" class="w-full p-4 rounded bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500" required>
+                    <textarea name="message" placeholder="Mesajınız" rows="4" class="w-full p-4 rounded bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-yellow-500" required></textarea>
+                    <button type="submit" class="contact-button w-full">
+                        <i class="fa-solid fa-paper-plane mr-2"></i> Gönder
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Başarı Mesajı (Dinamik) -->
+        <% if (messageSent) { %>
+            <div class="mt-8 text-center">
+                <p class="text-xl text-green-400">Mesajınız başarıyla gönderildi!</p>
+            </div>
+        <% } %>
+    </div>
+</body>
+        </html>

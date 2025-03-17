@@ -14,7 +14,7 @@ if (args.length === 0) {
 }
 switch (args[0]) {
     case 'version':
-        console.log('Naper v0.0.1');
+        console.log('Naper v0.0.5');
         break;
     case 'help':
         console.log('\n' + chalk_1.default.bold.blue('📖 NAPER COMMAND GUIDE') + '\n');
@@ -24,6 +24,7 @@ switch (args[0]) {
         console.log('\n' + chalk_1.default.green('For more information: ') + chalk_1.default.underline.cyan('https://github.com/yigitkabak/aperium'));
         break;
     case 'install':
+    case 'i':
         if (args.length < 2) {
             console.error(chalk_1.default.red('❌ Error: Please specify the package name to install.'));
             process.exit(1);
