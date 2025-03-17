@@ -64,16 +64,14 @@ npm install aperium
 
 That's all there is to it!
 
-# Huh detaylar sistemi
+# Huh details system
 
-Aperture Labs. in diğer bir ürünü olan .huh dosya uzantısını aperium üzerinden kullanın.
+Use the .huh file extension, another product of Aperture Labs. via aperium.
 
 ```bash
 huh file.huh
 ```
 
-bu komut huh dosyanızın detaylı bir analizini çıkarıcaktır.
-<hr>
-
+this command will give you a detailed analysis of your huh file.
 
 ## For more information, you can use the command ```aperium```.
