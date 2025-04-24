@@ -69,7 +69,7 @@ That's all there is to it!
 Use the .huh file extension, another product of Aperture Labs. via aperium.
 
 ```bash
-huh file.huh
+huhinfo file.huh
 ```
 
 this command will give you a detailed analysis of your huh file.
