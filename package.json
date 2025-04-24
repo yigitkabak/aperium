@@ -7,14 +7,14 @@
     "aper": "./dist/aper.js",
     "naper": "./dist/naper.js",
     "aperium": "./dist/aperium.js",
-    "huh": "./dist/huh.js"
+    "huhinfo": "./dist/huh.js"
   },
   "scripts": {
     "build": "tsc; npm link",
     "aper": "npm run build && node dist/aper.js",
     "naper": "npm run build && node dist/naper.js",
     "aperium": "npm run build && node dist/naper.js",
-    "huh": "npm run build && node dist/huh.js"
+    "huhinfo": "npm run build && node dist/huh.js"
   },
   "dependencies": {
     "chalk": "^5.4.1",
