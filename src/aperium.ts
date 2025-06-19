@@ -5,7 +5,7 @@ import fs from 'fs';
 import path from 'path';
 
 const args = process.argv.slice(2);
-const APERIUM_VERSION = '0.0.6';
+const APERIUM_VERSION = '0.0.7';
 
 function createAperiumFile(targetDir: string) {
   const aperiumConfig = {
