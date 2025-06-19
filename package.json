@@ -1,6 +1,6 @@
 {
   "name": "aperium",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "description": "Aperium: A lightweight package management CLI tool",
   "main": "dist/aperium.js",
   "bin": {
