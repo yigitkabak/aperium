@@ -4,7 +4,7 @@ import * as path from 'path';
 import chalk from 'chalk';
 
 const args = process.argv.slice(2);
-const version = "v0.0.6";
+const version = "v0.0.7";
 
 const displayUsage = () => {
   console.log('\x1b[33mUsage:\x1b[0m aper install <name>\n');
