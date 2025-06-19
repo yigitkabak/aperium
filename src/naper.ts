@@ -12,7 +12,7 @@ if (args.length === 0) {
 
 switch (args[0]) {
   case 'version':
-    console.log('Naper v0.0.6');
+    console.log('Naper v0.0.7');
     break;
 
   case 'help':
