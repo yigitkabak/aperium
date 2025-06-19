@@ -196,8 +196,8 @@ const huhFileViewer = async (filePath: string): Promise<void> => {
 
 const main = async (): Promise<void> => {
   if (args.length === 0) {
-    console.log(chalk.yellow('Usage: huh <file_path>'));
-    console.log(chalk.yellow('Example: huh file.huh'));
+    console.log(chalk.yellow('Usage: huhinfo <file_path>'));
+    console.log(chalk.yellow('Example: huhinfo file.huh'));
     process.exit(0);
   }
 
