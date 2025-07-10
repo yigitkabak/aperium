@@ -511,7 +511,8 @@ const viewAprFileContent = async (aprFilePath: string) => {
           console.log(chalk.white(decryptedScript));
           console.log(chalk.cyan('--------------------------------------\n'));
         } else {
-          console.error(chalk.red('Warning: Arch script hash verification failed. Script may have been tampered with.'));
+          // Corrected line for Arch script hash verification warning
+          console.error(chalk.red('Warning: Arch script hash verification failed. Script may have been tampered with.')); 
         }
       } catch (e: any) {
         console.error(chalk.red('Failed to decrypt or malformed Arch script:'), e.message);
@@ -542,3 +543,46 @@ const main = async () => {
       await installFromAprFile(args[1]);
     } else if (args.length >= 3 && args[1] === '-r') {
       const templateName = args[2];
+      await installTemplateFromDefaultRepo(templateName);
+    } else {
+      console.error(chalk.red('Error: You must provide a valid argument for the "install" command.'));
+      displayUsage();
+      process.exit(1);
+    }
+    process.exit(0);
+  }
+
+  switch (args[0]) {
+    case 'version':
+      console.log(`Aper ${version}`);
+      process.exit(0);
+    case 'help':
+      displayHelp();
+      process.exit(0);
+    case 'new':
+      if (args.length > 1) {
+        const packageName = args[1];
+        await createNewAprPackage(packageName);
+      } else {
+        console.error(chalk.red('Error: You must provide a package name for the "new" command.'));
+        displayUsage();
+        process.exit(1);
+      }
+      process.exit(0);
+    case 'view':
+      if (args.length === 2 && args[1].toLowerCase().endsWith('.apr')) {
+        await viewAprFileContent(args[1]);
+      } else {
+        console.error(chalk.red('Error: You must provide a .apr file path for the "view" command.'));
+        displayUsage();
+        process.exit(1);
+      }
+      process.exit(0);
+    default:
+      console.error(chalk.red('Error: Invalid command.'));
+      displayUsage();
+      process.exit(1);
+  }
+};
+
+main();
