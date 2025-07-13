@@ -1,4 +1,4 @@
-# Aperium: Modern Package Manager
+p# Aperium: Modern Package Manager
 
 Aperium is a product of the Aperture Labs Ecosystem.
 
@@ -34,6 +34,8 @@ When this command is run, only the necessary output is displayed and unnecessary
 One of Aperium's most powerful features is that it allows users to install their own custom-developed packages. The `aper` command allows you to include not only external dependencies but also modules you have developed and shared in your project.
 
 **To install a custom `.apr` package:**
+
+NOTE: The `.apr` system only works on Arch, Debian and Nixos based systems.
 ```
 aper install <fileName.apr>
 ```
@@ -42,7 +44,7 @@ With this command, you can install your own `.apr` packages and share them with 
 When this command is run, the following process occurs:
 
 * The `.apr` package is opened and its contents are analyzed.
-* Your system is detected (e.g., Debian, Arch, NixOS, or a system based on these).
+* Your system is detected.
 * If the package has already been installed or an existing installation is detected, you are informed.
 * The relevant installation scripts (or package lists for NixOS) are run.
 * The installation output will display the package name and a success message.
