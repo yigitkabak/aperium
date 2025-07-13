@@ -74,6 +74,7 @@ const calculateHash = (content: string): string => {
 const displayUsage = () => {
   console.log(chalk.yellow('Usage: ') + chalk.white('aper install <file.apr>\n'));
   console.log(chalk.yellow('         ') + chalk.white('aper install -r <template_name>\n'));
+  console.log(chalk.yellow('         ') + chalk.white('aper install -r all\n'));
   console.log(chalk.yellow('         ') + chalk.white('aper new <package_name>\n'));
   console.log(chalk.yellow('         ') + chalk.white('aper view <file.apr>\n'));
   console.log(chalk.bold('Aperture Labs.'));
@@ -84,12 +85,43 @@ const displayHelp = () => {
   console.log(chalk.cyan('aper install <file.apr>') + chalk.gray('    # Installs a package from a local .apr package file.'));
   console.log(chalk.cyan('aper install -r <template_name>') + chalk.gray(' # Installs a specific template from the default repository.'));
   console.log(chalk.cyan('aper install -r all') + chalk.gray('       # Installs all templates from the default repository.'));
-  console.log(chalk.cyan('aper new <package_name>') + chalk.gray('    # Creates a new .apr package with specified installation scripts.'));
-  console.log(chalk.cyan('aper view <file.apr>') + chalk.gray('     # Displays installation scripts inside an .apr package file.'));
+  console.log(chalk.cyan('aper new <package_name>') + chalk.gray('    # Creates a new .apr package with specified installation scripts/configs.'));
+  console.log(chalk.cyan('aper view <file.apr>') + chalk.gray('     # Displays installation scripts/configs inside an .apr package file.'));
   console.log(chalk.cyan('aper version') + chalk.gray('             # Shows the current version.'));
   console.log(chalk.cyan('aper help') + chalk.gray('                # Shows the help menu.'));
   console.log("\n" + chalk.green('For more information: ') + chalk.underline.cyan('https://github.com/yigitkabak/aperium'));
   console.log(chalk.gray(`Default template repository: ${chalk.cyan(DEFAULT_REPO_URL)}`));
+};
+
+const APERIUM_INSTALLED_PACKAGES_DIR = path.join(os.homedir(), '.aperium', 'installed_packages');
+
+const registerInstalledPackage = (packageName: string, packageHash: string) => {
+  fs.ensureDirSync(APERIUM_INSTALLED_PACKAGES_DIR);
+  const packageRecordPath = path.join(APERIUM_INSTALLED_PACKAGES_DIR, `${packageName}.json`);
+  const record = {
+    name: packageName,
+    hash: packageHash,
+    installedAt: new Date().toISOString(),
+    version: version
+  };
+  fs.writeFileSync(packageRecordPath, JSON.stringify(record, null, 2));
+};
+
+const isPackageInstalled = (packageName: string, packageHash: string): boolean => {
+  const packageRecordPath = path.join(APERIUM_INSTALLED_PACKAGES_DIR, `${packageName}.json`);
+  if (fs.existsSync(packageRecordPath)) {
+    try {
+      const record = JSON.parse(fs.readFileSync(packageRecordPath, 'utf8'));
+      if (record.name === packageName && record.hash === packageHash) {
+        return true;
+      } else if (record.name === packageName && record.hash !== packageHash) {
+        console.warn(chalk.yellow(`Warning: Package "${packageName}" is already installed but with a different hash. Consider reinstalling or updating.`));
+      }
+    } catch (e) {
+      console.error(chalk.red(`Error reading installed package record for "${packageName}":`), e);
+    }
+  }
+  return false;
 };
 
 const setupAperiumStructure = (targetFolder: string) => {
@@ -115,17 +147,42 @@ const getOS = async (): Promise<string> => {
           if (err) {
             resolve('unknown');
           } else {
-            resolve(unameStdout.trim().toLowerCase());
+            const osName = unameStdout.trim().toLowerCase();
+            if (osName.includes('linux')) {
+              resolve('linux');
+            } else {
+              resolve(osName);
+            }
           }
         });
         return;
       }
-      if (stdout.includes('ID=debian') || stdout.includes('ID_LIKE=debian') || stdout.includes('ID="ubuntu"')) {
+
+      const lines = stdout.split('\n');
+      let id = '';
+      let idLike = '';
+
+      lines.forEach(line => {
+        if (line.startsWith('ID=')) {
+          id = line.substring(3).replace(/"/g, '');
+        } else if (line.startsWith('ID_LIKE=')) {
+          idLike = line.substring(8).replace(/"/g, '');
+        }
+      });
+
+      if (id === 'debian' || idLike.includes('debian')) {
         resolve('debian');
-      } else if (stdout.includes('ID=arch') || stdout.includes('ID_LIKE=arch')) {
+      } else if (id === 'arch' || idLike.includes('arch')) {
         resolve('arch');
+      } else if (id === 'nixos' || idLike.includes('nixos')) {
+        resolve('nixos');
       } else {
-        resolve('unknown');
+        if (id) {
+          console.log(chalk.yellow(`Warning: Specific scripts for ID "${id}" are not available. Attempting generic approach.`));
+          resolve(id);
+        } else {
+          resolve('unknown');
+        }
       }
     });
   });
@@ -219,6 +276,141 @@ const executeScriptContent = async (scriptContent: string, templateName: string,
     });
 };
 
+const applyNixOSConfiguration = async (packageListString: string, templateName: string): Promise<void> => {
+  return new Promise(async (resolve, reject) => {
+    if (!packageListString.trim()) {
+      console.log(chalk.yellow(`NixOS package list for "${templateName}" is empty.`));
+      resolve();
+      return;
+    }
+
+    const nixConfigPath = '/etc/nixos/configuration.nix';
+    const aperiumModulesDir = '/etc/nixos/aperium-modules';
+
+    try {
+      await fs.ensureDir(aperiumModulesDir, { mode: 0o755 });
+      console.log(chalk.blue(`Ensured module directory exists: ${aperiumModulesDir}`));
+    } catch (error) {
+      console.error(chalk.red(`Error ensuring module directory ${aperiumModulesDir}:`), error);
+      reject(new Error(`Failed to create module directory.`));
+      return;
+    }
+
+    const backupPath = `${nixConfigPath}.bak_aper_${Date.now()}`;
+    try {
+      await fs.copy(nixConfigPath, backupPath);
+      console.log(chalk.blue(`Backed up existing ${nixConfigPath} to ${backupPath}`));
+    } catch (error) {
+      console.error(chalk.red(`Error backing up ${nixConfigPath}:`), error);
+      reject(new Error(`Failed to back up ${nixConfigPath}.`));
+      return;
+    }
+
+    const moduleFileName = `${templateName}-packages.nix`;
+    const modulePath = path.join(aperiumModulesDir, moduleFileName);
+
+    const packages = packageListString.split(',').map(p => p.trim()).filter(p => p.length > 0);
+    const packagesNixFormat = packages.join('\n    ');
+
+    const moduleContent = `{ config, pkgs, ... }:
+
+{
+  environment.systemPackages = with pkgs; [
+    ${packagesNixFormat}
+  ];
+}
+`;
+
+    try {
+      await fs.writeFile(modulePath, moduleContent, { mode: 0o644 });
+      console.log(chalk.green(`Created NixOS module for "${templateName}" at ${modulePath}.`));
+    } catch (error) {
+      console.error(chalk.red(`Error creating NixOS module for "${templateName}":`), error);
+      reject(new Error(`Failed to create NixOS module.`));
+      return;
+    }
+
+    let currentConfigContent = await fs.readFile(nixConfigPath, 'utf8');
+    const importStatement = `\n  ./aperium-modules/${moduleFileName}`;
+
+    if (!currentConfigContent.includes(importStatement)) {
+      const importRegex = /(imports\s*=\s*\[)([\s\S]*?)(\]\s*;)/;
+      const match = currentConfigContent.match(importRegex);
+
+      if (match) {
+        const preImports = match[1];
+        const existingImportsContent = match[2];
+        const postImports = match[3];
+
+        const newImportsContent = `${existingImportsContent}${importStatement}\n  `;
+        const newConfigContent = currentConfigContent.replace(
+          importRegex,
+          `${preImports}${newImportsContent}${postImports}`
+        );
+        currentConfigContent = newConfigContent;
+        console.log(chalk.blue(`Added import for "${moduleFileName}" to ${nixConfigPath}.`));
+      } else {
+        const openingBraceIndex = currentConfigContent.indexOf('{');
+        if (openingBraceIndex !== -1) {
+          const contentAfterBrace = currentConfigContent.substring(openingBraceIndex + 1);
+          currentConfigContent = currentConfigContent.substring(0, openingBraceIndex + 1) +
+            `\n\n  imports = [\n    ./hardware-configuration.nix\n    ${importStatement}\n  ];\n` +
+            contentAfterBrace;
+        } else {
+          currentConfigContent = `{ config, pkgs, ... }:\n\n{\n  imports = [\n    ./hardware-configuration.nix\n    ${importStatement}\n  ];\n\n${currentConfigContent}\n}\n`;
+        }
+        console.log(chalk.yellow(`Warning: No existing 'imports' block found. Attempting to add a new one to ${nixConfigPath}. Please review your ${nixConfigPath} file manually.`));
+      }
+
+      try {
+        await fs.writeFile(nixConfigPath, currentConfigContent);
+      } catch (error) {
+        console.error(chalk.red(`Error updating ${nixConfigPath} with import: `), error);
+        reject(new Error(`Failed to update main configuration.nix.`));
+        return;
+      }
+    } else {
+      console.log(chalk.yellow(`Import for "${moduleFileName}" already exists in ${nixConfigPath}.`));
+    }
+
+    const answers = await inquirer.prompt([
+      {
+        type: 'confirm',
+        name: 'rebuildNixos',
+        message: chalk.yellow('The NixOS configuration has been updated. Do you want to rebuild your system now? (This may take a while and requires sudo)'),
+        default: true,
+      }
+    ]);
+
+    if (answers.rebuildNixos) {
+      console.log(chalk.blue('Rebuilding NixOS system... This may take a while.'));
+      const child = spawn('sudo', ['-E', 'nixos-rebuild', 'switch'], {
+        stdio: 'inherit',
+        shell: false
+      });
+
+      child.on('close', (code) => {
+        if (code !== 0) {
+          console.log('\n' + chalk.red(`NixOS rebuild exited with code ${code}.`));
+          console.error(chalk.red('Please check the output above for errors. You may need to manually run `sudo nixos-rebuild switch` to apply changes.'));
+          reject(new Error(`NixOS rebuild failed.`));
+        } else {
+          console.log('\n' + chalk.green(`NixOS rebuild completed successfully.`));
+          resolve();
+        }
+      });
+
+      child.on('error', (err) => {
+        console.error(chalk.red(`An unexpected error occurred during NixOS rebuild:`), err);
+        reject(err);
+      });
+    } else {
+      console.log(chalk.yellow('NixOS rebuild skipped. Remember to run `sudo nixos-rebuild switch` to apply the changes.'));
+      resolve();
+    }
+  });
+};
+
 const executeLegacySetupScript = async (scriptPath: string, targetFolder: string, templateName: string) => {
   if (fs.existsSync(scriptPath)) {
     console.log(chalk.blue(`Installation script found for template "${templateName}": ${path.basename(scriptPath)}`));
@@ -228,7 +420,6 @@ const executeLegacySetupScript = async (scriptPath: string, targetFolder: string
       console.log(chalk.yellow(`Specified installation script (${path.basename(scriptPath)}) not found for "${templateName}".`));
   }
 };
-
 
 const installTemplateFromDefaultRepo = async (templateName: string) => {
   const repoName = DEFAULT_REPO_URL.split('/').pop()?.replace('.git', '') || 'cloned_repo';
@@ -345,6 +536,12 @@ const createNewAprPackage = async (packageName: string) => {
       name: 'debianScript',
       message: chalk.cyan('Enter installation commands for Debian/Ubuntu (can be left blank):'),
       default: ''
+    },
+    {
+      type: 'input',
+      name: 'nixosPackages',
+      message: chalk.cyan('Enter NixOS packages to install (comma-separated, e.g., neofetch, git, vim - can be left blank):'),
+      default: ''
     }
   ]);
 
@@ -358,6 +555,8 @@ const createNewAprPackage = async (packageName: string) => {
       archScriptHash: '',
       debianScriptEnc: '',
       debianScriptHash: '',
+      nixosPackagesEnc: '',
+      nixosPackagesHash: '',
       description: 'Aperium Package',
     };
 
@@ -368,6 +567,10 @@ const createNewAprPackage = async (packageName: string) => {
     if (answers.debianScript) {
       packageMeta.debianScriptEnc = encrypt(answers.debianScript);
       packageMeta.debianScriptHash = calculateHash(answers.debianScript);
+    }
+    if (answers.nixosPackages) {
+      packageMeta.nixosPackagesEnc = encrypt(answers.nixosPackages);
+      packageMeta.nixosPackagesHash = calculateHash(answers.nixosPackages);
     }
 
     zip.addFile('package.json', Buffer.from(JSON.stringify(packageMeta, null, 2)), 'Package metadata');
@@ -408,11 +611,23 @@ const installFromAprFile = async (aprFilePath: string) => {
     }
     packageMeta = JSON.parse(fs.readFileSync(packageMetaPath, 'utf8'));
 
+    const packageCombinedHash = calculateHash(
+        (packageMeta.archScriptEnc || '') + 
+        (packageMeta.debianScriptEnc || '') + 
+        (packageMeta.nixosPackagesEnc || '')
+    );
+
+    if (isPackageInstalled(packageMeta.name, packageCombinedHash)) {
+      console.log(chalk.yellow(`Package "${packageMeta.name}" is already installed with the same version and configuration. Skipping installation.`));
+      process.exit(0);
+    }
+
     const osType = await getOS();
     let scriptToExecuteEnc: string | null = null;
     let scriptToExecuteHash: string | null = null;
     let scriptNameForLog: string = 'unknown script';
     let scriptContent: string | null = null;
+    let nixosPackagesContent: string | null = null;
 
     if (osType === 'arch' && packageMeta.archScriptEnc) {
       scriptToExecuteEnc = packageMeta.archScriptEnc;
@@ -424,26 +639,43 @@ const installFromAprFile = async (aprFilePath: string) => {
       scriptToExecuteHash = packageMeta.debianScriptHash;
       scriptNameForLog = 'Debian installation script';
       console.log(chalk.blue(`System detected as Debian-based. Searching for Debian installation script.`));
+    } else if (osType === 'nixos' && packageMeta.nixosPackagesEnc) {
+      scriptToExecuteEnc = packageMeta.nixosPackagesEnc;
+      scriptToExecuteHash = packageMeta.nixosPackagesHash;
+      scriptNameForLog = 'NixOS package list';
+      nixosPackagesContent = decrypt(scriptToExecuteEnc!);
+      console.log(chalk.blue(`System detected as NixOS. Searching for NixOS package list.`));
     } else {
       console.log(chalk.yellow(`Warning: No suitable or generic installation script found for detected system (${osType}).`));
     }
 
     if (scriptToExecuteEnc) {
-      const decryptedScript = decrypt(scriptToExecuteEnc);
-      const calculatedHash = calculateHash(decryptedScript);
+      if (osType !== 'nixos') {
+        const decryptedScript = decrypt(scriptToExecuteEnc);
+        const calculatedHash = calculateHash(decryptedScript);
 
-      if (calculatedHash !== scriptToExecuteHash) {
-        console.error(chalk.red(`Error: Installation script could not be verified! Hash mismatch. It may be unsafe to install this package.`));
-        process.exit(1);
+        if (calculatedHash !== scriptToExecuteHash) {
+          console.error(chalk.red(`Error: Installation script could not be verified! Hash mismatch. It may be unsafe to install this package.`));
+          process.exit(1);
+        }
+        console.log(chalk.green(`${scriptNameForLog} successfully verified.`));
+        scriptContent = decryptedScript;
+        await executeScriptContent(scriptContent, packageMeta.name);
+      } else if (nixosPackagesContent) {
+        const calculatedHash = calculateHash(nixosPackagesContent);
+        if (calculatedHash !== scriptToExecuteHash) {
+          console.error(chalk.red(`Error: NixOS package list could not be verified! Hash mismatch. It may be unsafe to install this package.`));
+          process.exit(1);
+        }
+        console.log(chalk.green(`${scriptNameForLog} successfully verified.`));
+        await applyNixOSConfiguration(nixosPackagesContent, packageMeta.name);
       }
-      console.log(chalk.green(`${scriptNameForLog} successfully verified.`));
-      scriptContent = decryptedScript;
-
-      await executeScriptContent(scriptContent, packageMeta.name);
-
     } else {
       console.log(chalk.yellow(`No suitable script found to execute for "${packageMeta.name}" package.`));
     }
+
+    registerInstalledPackage(packageMeta.name, packageCombinedHash);
+    console.log(chalk.green(`Package "${packageMeta.name}" installation recorded.`));
 
   } catch (error) {
     console.error(chalk.red('An error occurred during installation from .apr file:'), error);
@@ -511,7 +743,6 @@ const viewAprFileContent = async (aprFilePath: string) => {
           console.log(chalk.white(decryptedScript));
           console.log(chalk.cyan('--------------------------------------\n'));
         } else {
-          // Corrected line for Arch script hash verification warning
           console.error(chalk.red('Warning: Arch script hash verification failed. Script may have been tampered with.')); 
         }
       } catch (e: any) {
@@ -519,6 +750,24 @@ const viewAprFileContent = async (aprFilePath: string) => {
       }
     } else {
       console.log(chalk.yellow('No installation script found for Arch Linux.\n'));
+    }
+
+    if (packageMeta.nixosPackagesEnc) {
+      try {
+        const decryptedPackages = decrypt(packageMeta.nixosPackagesEnc);
+        const calculatedHash = calculateHash(decryptedPackages);
+        if (calculatedHash === packageMeta.nixosPackagesHash) {
+          console.log(chalk.cyan('--- NixOS Packages to Install ---'));
+          console.log(chalk.white(decryptedPackages.split(',').map(p => `- ${p.trim()}`).join('\n')));
+          console.log(chalk.cyan('-----------------------------------\n'));
+        } else {
+          console.error(chalk.red('Warning: NixOS package list hash verification failed. List may have been tampered with.'));
+        }
+      } catch (e: any) {
+        console.error(chalk.red('Failed to decrypt or malformed NixOS package list:'), e.message);
+      }
+    } else {
+      console.log(chalk.yellow('No NixOS package list found.\n'));
     }
 
   } catch (error) {
@@ -530,7 +779,6 @@ const viewAprFileContent = async (aprFilePath: string) => {
     }
   }
 };
-
 
 const main = async () => {
   if (args.length === 0) {
