@@ -1,101 +1,101 @@
-# Aperium: Modern Paket Yöneticisi
+# Aperium: Modern Package Manager
 
-Aperium, Aperture Labs Ekosistemi'nin bir ürünüdür.
+Aperium is a product of the Aperture Labs Ecosystem.
 
-Aperium, yalnızca bir paket yükleyici olmakla kalmayıp, aynı zamanda geliştirdiğiniz özel paketleri kolayca yönetmenizi ve paylaşmanızı sağlayan bir araçtır. Node.js ekosistemindeki paket kurulum sürecini daha verimli, basit ve kullanıcı dostu hale getirmek için tasarlanmıştır, böylece geliştiricilere zaman kazandırır. Aperium, hem harici bağımlılıkları (npm'den indirilen paketler) hem de kendi özel paketlerinizi yüklemenize olanak tanır. Aperium ile sadece popüler açık kaynak paketlerini değil, kendi projelerinizdeki modülleri de kolayca kurabilirsiniz.
+Aperium is not just a package installer, but also a tool that allows you to easily manage and share the custom packages you develop. It is designed to make the package installation process in the Node.js ecosystem more efficient, simple, and user-friendly, thereby saving developers time. Aperium allows you to install both external dependencies (packages downloaded from npm) and your own custom packages. With Aperium, you can easily install not only popular open-source packages but also modules from your own projects.
 
-Bir paketi Aperium'a yüklemek için GitHub depomuza bir pull request oluşturabilirsiniz.
+To upload a package to Aperium, you can create a pull request to our GitHub repository.
 
-## Projenin Temel Özellikleri:
+## Key Features of the Project:
 
-Aperium, sadece npm'den paketleri yüklemekle kalmaz, aynı zamanda kendi özel paketlerinizi indirmenize ve projelerinize dahil etmenize olanak tanır. `aper` komutunu kullanarak, geliştirdiğiniz modülleri veya başkalarıyla paylaşmak istediğiniz projeleri kolayca yükleyebilirsiniz.
+Aperium not only allows you to install packages from npm, but also enables you to download your own custom packages and include them in your projects. Using the `aper` command, you can easily install the modules you have developed or the projects you want to share with others.
 
-## Aperium Nasıl Kullanılır:
+## How to Use Aperium:
 
-Aperium, `naper` ve `aper` olmak üzere iki ana komutla çalışır. Bu komutlar farklı amaçlara hizmet eder.
+Aperium works with two main commands: `naper` and `aper`. These commands serve different purposes.
 
-### naper Komutu:
+### naper Command:
 ```
 naper install <packageName>
 ```
-Bu komut, npm'den harici bağımlılıkları yükler. `express`, `lodash` gibi popüler paketleri yüklemek için bu komutu kullanabilirsiniz.
+This command installs external dependencies from npm. You can use this command to install popular packages such as `express` and `lodash`.
 ```
 naper install express
 ```
-Bu komut çalıştırıldığında, yalnızca gerekli çıktılar görüntülenir ve gereksiz bilgiler gizlenir. Kurulum tamamlandıktan sonra kullanıcıya bir başarı mesajı gösterilir:
+When this command is run, only the necessary output is displayed and unnecessary information is hidden. After the installation is complete, a success message is displayed to the user:
 ```
 🔍 Installing express package... ✅ express has been successfully installed.
 ```
 
 ---
 
-### Aper Komutu:
+### Aper Command:
 
-Aperium'un en güçlü özelliklerinden biri, kullanıcıların kendi özel geliştirdikleri paketleri yüklemelerine olanak sağlamasıdır. `aper` komutu, projenize yalnızca harici bağımlılıkları değil, aynı zamanda kendi geliştirdiğiniz ve paylaştığınız modülleri de dahil etmenizi sağlar.
+One of Aperium's most powerful features is that it allows users to install their own custom-developed packages. The `aper` command allows you to include not only external dependencies but also modules you have developed and shared in your project.
 
-**Özel bir `.apr` paketini yüklemek için:**
+**To install a custom `.apr` package:**
 ```
-aper install <dosyaAdi.apr>
+aper install <fileName.apr>
 ```
-Bu komut ile kendi `.apr` paketlerinizi kurabilir ve başkalarıyla paylaşabilirsiniz. Bir modül veya proje geliştirdiğinizde, Aperium'u kullanarak bunu diğer geliştiricilerle kolayca paylaşabilirsiniz.
+With this command, you can install your own `.apr` packages and share them with others. When you develop a module or project, you can easily share it with other developers using Aperium.
 
-Bu komut çalıştırıldığında, aşağıdaki süreç gerçekleşir:
+When this command is run, the following process occurs:
 
-* `.apr` paketi açılır ve içeriği analiz edilir.
-* Sisteminiz algılanır (örneğin Debian, Arch, NixOS veya bunlara tabanlı bir sistem).
-* Paket daha önce yüklenmişse veya mevcut bir kurulum algılanırsa size bilgi verilir.
-* İlgili kurulum komut dosyaları (veya NixOS için paket listeleri) çalıştırılır.
-* Kurulum çıktısı, paket adını ve başarı mesajını gösterecektir.
+* The `.apr` package is opened and its contents are analyzed.
+* Your system is detected (e.g., Debian, Arch, NixOS, or a system based on these).
+* If the package has already been installed or an existing installation is detected, you are informed.
+* The relevant installation scripts (or package lists for NixOS) are run.
+* The installation output will display the package name and a success message.
 
-**Aperium deposundan şablon yüklemek için:**
+**To install a template from the Aperium repository:**
 ```
-aper install -r <şablon_adı>
+aper install -r <template_name>
 ```
-Bu komut, Aperium'un varsayılan GitHub deposundan belirli bir şablonu indirip kurmanızı sağlar.
+This command allows you to download and install a specific template from Aperium's default GitHub repository.
 ```
 aper install -r Synapic
 ```
 
-**Yeni bir `.apr` paketi oluşturmak için:**
+**To create a new `.apr` package:**
 ```
-aper new <paket_adı>
+aper new <package_name>
 ```
-Bu komut, platforma özel (Debian, Arch, NixOS) kurulum komut dosyalarını veya paket listelerini tanımlayabileceğiniz yeni bir `.apr` paketi oluşturmanıza yardımcı olur.
+This command helps you create a new `.apr` package where you can define platform-specific (Debian, Arch, NixOS) installation scripts or package lists.
 
-**Bir `.apr` paketinin içeriğini görüntülemek için:**
+**To view the contents of an `.apr` package:**
 ```
-aper view <dosyaAdi.apr>
+aper view <fileName.apr>
 ```
-Bu komut, bir `.apr` dosyasının içindeki kurulum komut dosyalarını ve yapılandırmalarını görüntülemenizi sağlar, böylece bir paketi yüklemeden önce ne yaptığını görebilirsiniz.
+This command allows you to view the installation scripts and configurations inside an `.apr` file, so you can see what it does before installing a package.
 
 ---
 
-## Aperium'u İndirme ve Kullanma:
+## Downloading and Using Aperium:
 
-İlk olarak, GitHub depomuzu klonlamanız gerekiyor:
+First, you need to clone our GitHub repository:
 ```
 git clone https://github.com/yigitkabak/aperium
 ```
-Ardından, proje dizinine gidin ve gerekli npm modüllerini yükleyin ve projeyi derleyin:
+Then, navigate to the project directory and install the necessary npm modules and build the project:
 ```
 cd aperium
 npm install
 npm run build
 ```
 
-Hepsi bu kadar! Artık `aper` komutunu terminalinizden doğrudan kullanabilirsiniz.
+That's it! You can now use the `aper` command directly from your terminal.
 
 ---
 
-## Huh Detaylar Sistemi
+## Huh Details System
 
-Aperture Labs'ın başka bir ürünü olan `.huh` dosya uzantısını Aperium aracılığıyla kullanın.
+Use the `.huh` file extension, another product of Aperture Labs, via Aperium.
 
 ```
 huhinfo file.huh
 ```
-Bu komut, `.huh` dosyanızın ayrıntılı bir analizini sunacaktır.
+This command will provide a detailed analysis of your `.huh` file.
 
 ---
 
-Daha fazla bilgi için, sadece terminalinizde `aper help` komutunu kullanabilirsiniz.
+For more information, simply use the `aper help` command in your terminal.
