@@ -53,7 +53,7 @@ aper install -r <şablon_adı>
 ```
 Bu komut, Aperium'un varsayılan GitHub deposundan belirli bir şablonu indirip kurmanızı sağlar.
 ```
-aper install -r web-dev-starter
+aper install -r Synapic
 ```
 
 **Yeni bir `.apr` paketi oluşturmak için:**
