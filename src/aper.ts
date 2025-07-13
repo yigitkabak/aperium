@@ -72,23 +72,45 @@ const calculateHash = (content: string): string => {
 };
 
 const displayUsage = () => {
-  console.log(chalk.yellow('Usage: ') + chalk.white('aper install <file.apr>\n'));
-  console.log(chalk.yellow('         ') + chalk.white('aper install -r <template_name>\n'));
-  console.log(chalk.yellow('         ') + chalk.white('aper new <package_name>\n'));
-  console.log(chalk.yellow('         ') + chalk.white('aper view <file.apr>\n'));
-  console.log(chalk.bold('Aperture Labs.'));
+  console.log(chalk.bold.blue('\n🚀 Aperium: Modern Package Manager\n'));
+  console.log(chalk.yellow('Usage:'));
+  console.log(`  ${chalk.cyan('aper install')} ${chalk.white('<file.apr>')}        ${chalk.gray('# Yerel bir .apr paketini yükler.')}`);
+  console.log(`  ${chalk.cyan('aper install')} ${chalk.yellow('-r')} ${chalk.white('<template_name>')} ${chalk.gray('# Varsayılan depodan belirli bir şablonu yükler.')}`);
+  console.log(`  ${chalk.cyan('aper new')} ${chalk.white('<package_name>')}    ${chalk.gray('# Yeni bir .apr paketi oluşturur.')}`);
+  console.log(`  ${chalk.cyan('aper view')} ${chalk.white('<file.apr>')}       ${chalk.gray('# .apr paketi içeriğini görüntüler.')}`);
+  console.log(`  ${chalk.cyan('aper version')}                    ${chalk.gray('# Aperium sürümünü gösterir.')}`);
+  console.log(`  ${chalk.cyan('aper help')}                       ${chalk.gray('# Yardım menüsünü gösterir.')}`);
+  console.log('\n' + chalk.bold.magenta('Aperture Labs. All rights reserved.'));
+  console.log(chalk.gray(`For more info: ${chalk.underline('https://github.com/yigitkabak/aperium')}`));
 };
 
 const displayHelp = () => {
-  console.log("\n" + chalk.bold.blue('APER COMMAND GUIDE') + "\n");
-  console.log(chalk.cyan('aper install <file.apr>') + chalk.gray('    # Installs a package from a local .apr package file.'));
-  console.log(chalk.cyan('aper install -r <template_name>') + chalk.gray(' # Installs a specific template from the default repository.'));
-  console.log(chalk.cyan('aper new <package_name>') + chalk.gray('    # Creates a new .apr package with specified installation scripts/configs.'));
-  console.log(chalk.cyan('aper view <file.apr>') + chalk.gray('     # Displays installation scripts/configs inside an .apr package file.'));
-  console.log(chalk.cyan('aper version') + chalk.gray('             # Shows the current version.'));
-  console.log(chalk.cyan('aper help') + chalk.gray('                # Shows the help menu.'));
-  console.log("\n" + chalk.green('For more information: ') + chalk.underline.cyan('https://github.com/yigitkabak/aperium'));
-  console.log(chalk.gray(`Default template repository: ${chalk.cyan(DEFAULT_REPO_URL)}`));
+  console.log(chalk.bold.blue('\n🚀 APERIUM KOMUT REHBERİ\n'));
+  console.log(chalk.bold.yellow('📦 Paket Yükleme:'));
+  console.log(`  ${chalk.cyan('aper install')} ${chalk.white('<dosya.apr>')}`);
+  console.log(`    ${chalk.gray('-> Yerel bir .apr paket dosyasını yükler.')}\n`);
+
+  console.log(chalk.bold.yellow('🌐 Depo Şablon Yükleme:'));
+  console.log(`  ${chalk.cyan('aper install')} ${chalk.yellow('-r')} ${chalk.white('<şablon_adı>')}`);
+  console.log(`    ${chalk.gray('-> Aperium varsayılan deposundan belirli bir şablonu indirip kurar.')}\n`);
+
+  console.log(chalk.bold.yellow('➕ Yeni Paket Oluşturma:'));
+  console.log(`  ${chalk.cyan('aper new')} ${chalk.white('<paket_adı>')}`);
+  console.log(`    ${chalk.gray('-> Belirtilen kurulum komut dosyaları/ayarları ile yeni bir .apr paketi oluşturur.')}\n`);
+
+  console.log(chalk.bold.yellow('🔍 Paket İçeriği Görüntüleme:'));
+  console.log(`  ${chalk.cyan('aper view')} ${chalk.white('<dosya.apr>')}`);
+  console.log(`    ${chalk.gray('-> Bir .apr paketi dosyasının içindeki kurulum komut dosyalarını/ayarlarını görüntüler.')}\n`);
+
+  console.log(chalk.bold.yellow('ℹ️ Bilgi Komutları:'));
+  console.log(`  ${chalk.cyan('aper version')}`);
+  console.log(`    ${chalk.gray('-> Mevcut Aperium sürümünü gösterir.')}\n`);
+
+  console.log(`  ${chalk.cyan('aper help')}`);
+  console.log(`    ${chalk.gray('-> Bu yardım menüsünü görüntüler.')}\n`);
+
+  console.log(chalk.green('Daha fazla bilgi ve örnek için: ') + chalk.underline.cyan('https://github.com/yigitkabak/aperium'));
+  console.log(chalk.gray(`Varsayılan şablon deposu: ${chalk.cyan(DEFAULT_REPO_URL)}`));
 };
 
 const APERIUM_INSTALLED_PACKAGES_DIR = path.join(os.homedir(), '.aperium', 'installed_packages');
@@ -274,6 +296,25 @@ const executeScriptContent = async (scriptContent: string, templateName: string,
     });
 };
 
+const runSudoCommand = async (command: string, args: string[], message: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+        console.log(chalk.blue(message));
+        const child = spawn('sudo', [command, ...args], { stdio: 'inherit' });
+
+        child.on('close', (code) => {
+            if (code !== 0) {
+                reject(new Error(`Command failed with code ${code}: sudo ${command} ${args.join(' ')}`));
+            } else {
+                resolve();
+            }
+        });
+
+        child.on('error', (err) => {
+            reject(new Error(`Failed to run sudo command: ${err.message}`));
+        });
+    });
+};
+
 const applyNixOSConfiguration = async (packageListString: string, templateName: string): Promise<void> => {
   return new Promise(async (resolve, reject) => {
     if (!packageListString.trim()) {
@@ -286,8 +327,8 @@ const applyNixOSConfiguration = async (packageListString: string, templateName: 
     const aperiumModulesDir = '/etc/nixos/aperium-modules';
 
     try {
-      await fs.ensureDir(aperiumModulesDir, { mode: 0o755 });
-      console.log(chalk.blue(`Ensured module directory exists: ${aperiumModulesDir}`));
+      console.log(chalk.blue('Aperium needs administrative privileges to set up NixOS modules. You may be prompted for your password.'));
+      await runSudoCommand('mkdir', ['-p', aperiumModulesDir], `Ensuring module directory exists: ${aperiumModulesDir}`);
     } catch (error) {
       console.error(chalk.red(`Error ensuring module directory ${aperiumModulesDir}:`), error);
       reject(new Error(`Failed to create module directory.`));
@@ -296,8 +337,9 @@ const applyNixOSConfiguration = async (packageListString: string, templateName: 
 
     const backupPath = `${nixConfigPath}.bak_aper_${Date.now()}`;
     try {
-      await fs.copy(nixConfigPath, backupPath);
-      console.log(chalk.blue(`Backed up existing ${nixConfigPath} to ${backupPath}`));
+      console.log(chalk.blue(`Backing up existing ${nixConfigPath} to ${backupPath}. This requires sudo permissions.`));
+      await runSudoCommand('cp', [nixConfigPath, backupPath], `Backing up existing ${nixConfigPath}...`);
+      console.log(chalk.green(`Backed up existing ${nixConfigPath} to ${backupPath}`));
     } catch (error) {
       console.error(chalk.red(`Error backing up ${nixConfigPath}:`), error);
       reject(new Error(`Failed to back up ${nixConfigPath}.`));
@@ -320,7 +362,10 @@ const applyNixOSConfiguration = async (packageListString: string, templateName: 
 `;
 
     try {
-      await fs.writeFile(modulePath, moduleContent, { mode: 0o644 });
+      console.log(chalk.blue(`Creating NixOS module for "${templateName}" at ${modulePath}. This requires sudo permissions.`));
+      const tempModulePath = path.join(os.tmpdir(), moduleFileName);
+      fs.writeFileSync(tempModulePath, moduleContent); // Write to a temp file first
+      await runSudoCommand('mv', [tempModulePath, modulePath], `Moving module to ${modulePath}...`); // Then move with sudo
       console.log(chalk.green(`Created NixOS module for "${templateName}" at ${modulePath}.`));
     } catch (error) {
       console.error(chalk.red(`Error creating NixOS module for "${templateName}":`), error);
@@ -361,7 +406,10 @@ const applyNixOSConfiguration = async (packageListString: string, templateName: 
       }
 
       try {
-        await fs.writeFile(nixConfigPath, currentConfigContent);
+        console.log(chalk.blue(`Updating ${nixConfigPath} with new module import. This requires sudo permissions.`));
+        const tempNixConfigPath = path.join(os.tmpdir(), 'configuration.nix.tmp');
+        fs.writeFileSync(tempNixConfigPath, currentConfigContent); // Write to a temp file first
+        await runSudoCommand('mv', [tempNixConfigPath, nixConfigPath], `Moving updated configuration to ${nixConfigPath}...`); // Then move with sudo
       } catch (error) {
         console.error(chalk.red(`Error updating ${nixConfigPath} with import: `), error);
         reject(new Error(`Failed to update main configuration.nix.`));
@@ -381,7 +429,7 @@ const applyNixOSConfiguration = async (packageListString: string, templateName: 
     ]);
 
     if (answers.rebuildNixos) {
-      console.log(chalk.blue('Rebuilding NixOS system... This may take a while.'));
+      console.log(chalk.blue('Rebuilding NixOS system... This may take a while. You may be prompted for your password again.'));
       const child = spawn('sudo', ['-E', 'nixos-rebuild', 'switch'], {
         stdio: 'inherit',
         shell: false
@@ -778,8 +826,7 @@ const main = async () => {
       await installFromAprFile(args[1]);
     } else if (args.length >= 3 && args[1] === '-r') {
       const templateName = args[2];
-      // `aper install -r all` komutu için kontrol kaldırıldı
-      if (templateName === 'all') { // Sadece help ve usage'dan kaldırıldı, kodda hata vermemesi için yine de kontrol eklendi.
+      if (templateName === 'all') { 
           console.error(chalk.red('Error: Installing all templates from repository is not supported. Please specify a template name.'));
           displayUsage();
           process.exit(1);
