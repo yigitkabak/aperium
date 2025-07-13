@@ -74,7 +74,6 @@ const calculateHash = (content: string): string => {
 const displayUsage = () => {
   console.log(chalk.yellow('Usage: ') + chalk.white('aper install <file.apr>\n'));
   console.log(chalk.yellow('         ') + chalk.white('aper install -r <template_name>\n'));
-  console.log(chalk.yellow('         ') + chalk.white('aper install -r all\n'));
   console.log(chalk.yellow('         ') + chalk.white('aper new <package_name>\n'));
   console.log(chalk.yellow('         ') + chalk.white('aper view <file.apr>\n'));
   console.log(chalk.bold('Aperture Labs.'));
@@ -84,7 +83,6 @@ const displayHelp = () => {
   console.log("\n" + chalk.bold.blue('APER COMMAND GUIDE') + "\n");
   console.log(chalk.cyan('aper install <file.apr>') + chalk.gray('    # Installs a package from a local .apr package file.'));
   console.log(chalk.cyan('aper install -r <template_name>') + chalk.gray(' # Installs a specific template from the default repository.'));
-  console.log(chalk.cyan('aper install -r all') + chalk.gray('       # Installs all templates from the default repository.'));
   console.log(chalk.cyan('aper new <package_name>') + chalk.gray('    # Creates a new .apr package with specified installation scripts/configs.'));
   console.log(chalk.cyan('aper view <file.apr>') + chalk.gray('     # Displays installation scripts/configs inside an .apr package file.'));
   console.log(chalk.cyan('aper version') + chalk.gray('             # Shows the current version.'));
@@ -479,30 +477,19 @@ const installTemplateFromDefaultRepo = async (templateName: string) => {
       }
     };
 
-    if (templateName === 'all') {
-      const files = await fs.readdir(repoPacksDir);
-      if (files.length === 0) {
-          console.log(chalk.yellow(`No templates found in "${chalk.cyan(repoPacksDir)}".`));
-          return;
-      }
-      for (const tName of files) {
-        await processSingleTemplate(tName);
-      }
-    } else {
-      const sourceTemplatePath = path.join(repoPacksDir, templateName);
-      const targetFolder = path.join(process.cwd(), templateName);
+    const sourceTemplatePath = path.join(repoPacksDir, templateName);
+    const targetFolder = path.join(process.cwd(), templateName);
 
-      if (!fs.existsSync(sourceTemplatePath)) {
-        console.error(chalk.red(`Error: Template "${templateName}" not found in the repository's "packs" folder.`));
-        process.exit(1);
-      }
-      if (fs.existsSync(targetFolder)) {
-        console.error(chalk.yellow(`Error: Target folder "${targetFolder}" already exists. Please use a different name.`));
-        process.exit(1);
-      }
-
-      await processSingleTemplate(templateName);
+    if (!fs.existsSync(sourceTemplatePath)) {
+      console.error(chalk.red(`Error: Template "${templateName}" not found in the repository's "packs" folder.`));
+      process.exit(1);
     }
+    if (fs.existsSync(targetFolder)) {
+      console.error(chalk.yellow(`Error: Target folder "${targetFolder}" already exists. Please use a different name.`));
+      process.exit(1);
+    }
+
+    await processSingleTemplate(templateName);
 
   } catch (error) {
     console.error(chalk.red('An error occurred during installation from repository:'), error);
@@ -791,6 +778,12 @@ const main = async () => {
       await installFromAprFile(args[1]);
     } else if (args.length >= 3 && args[1] === '-r') {
       const templateName = args[2];
+      // `aper install -r all` komutu için kontrol kaldırıldı
+      if (templateName === 'all') { // Sadece help ve usage'dan kaldırıldı, kodda hata vermemesi için yine de kontrol eklendi.
+          console.error(chalk.red('Error: Installing all templates from repository is not supported. Please specify a template name.'));
+          displayUsage();
+          process.exit(1);
+      }
       await installTemplateFromDefaultRepo(templateName);
     } else {
       console.error(chalk.red('Error: You must provide a valid argument for the "install" command.'));
