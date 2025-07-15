@@ -77,9 +77,9 @@ const displayUsage = () => {
   console.log(`  ${chalk.cyan('aper install')} ${chalk.white('<file.apr>')}        ${chalk.gray('# Yerel bir .apr paketini yükler.')}`);
   console.log(`  ${chalk.cyan('aper install')} ${chalk.yellow('-r')} ${chalk.white('<template_name>')} ${chalk.gray('# Varsayılan depodan belirli bir şablonu yükler.')}`);
   console.log(`  ${chalk.cyan('aper new')} ${chalk.white('<package_name>')}    ${chalk.gray('# Yeni bir .apr paketi oluşturur.')}`);
-  console.log(`  ${chalk.cyan('aper view')} ${chalk.white('<file.apr>')}       ${chalk.gray('# .apr paketi içeriğini görüntüler.')}`);
+  console.log(`  ${chalk.cyan('aper view')} ${chalk.white('<file.apr>')}         ${chalk.gray('# .apr paketi içeriğini görüntüler.')}`);
   console.log(`  ${chalk.cyan('aper version')}                    ${chalk.gray('# Aperium sürümünü gösterir.')}`);
-  console.log(`  ${chalk.cyan('aper help')}                       ${chalk.gray('# Yardım menüsünü gösterir.')}`);
+  console.log(`  ${chalk.cyan('aper help')}                         ${chalk.gray('# Yardım menüsünü gösterir.')}`);
   console.log('\n' + chalk.bold.magenta('Aperture Labs. All rights reserved.'));
   console.log(chalk.gray(`For more info: ${chalk.underline('https://github.com/yigitkabak/aperium')}`));
 };
@@ -115,8 +115,7 @@ const displayHelp = () => {
 
 const APERIUM_INSTALLED_PACKAGES_DIR = path.join(os.homedir(), '.aperium', 'installed_packages');
 
-const registerInstalledPackage = (packageName: string, packageHash: string) => {
-  fs.ensureDirSync(APERIUM_INSTALLED_PACKAGES_DIR);
+const registerInstalledPackage = async (packageName: string, packageHash: string) => {
   const packageRecordPath = path.join(APERIUM_INSTALLED_PACKAGES_DIR, `${packageName}.json`);
   const record = {
     name: packageName,
@@ -124,25 +123,24 @@ const registerInstalledPackage = (packageName: string, packageHash: string) => {
     installedAt: new Date().toISOString(),
     version: version
   };
-  fs.writeFileSync(packageRecordPath, JSON.stringify(record, null, 2));
+  const recordContent = JSON.stringify(record, null, 2);
+
+  try {
+    // Ensure the directory exists with sudo if necessary
+    await runSudoCommand('mkdir', ['-p', APERIUM_INSTALLED_PACKAGES_DIR], `Ensuring package record directory exists: ${APERIUM_INSTALLED_PACKAGES_DIR}`);
+    
+    // Write the file using sudo
+    console.log(chalk.blue(`Recording installation for "${packageName}"...`));
+    const tempRecordPath = path.join(os.tmpdir(), `${packageName}.json.tmp`);
+    fs.writeFileSync(tempRecordPath, recordContent);
+    await runSudoCommand('mv', [tempRecordPath, packageRecordPath], `Moving package record to ${packageRecordPath}...`);
+    console.log(chalk.green(`Package "${packageName}" installation recorded.`));
+  } catch (error) {
+    console.error(chalk.red(`Error recording installed package "${packageName}":`), error);
+    // Do not exit, as the primary installation might have succeeded.
+  }
 };
 
-const isPackageInstalled = (packageName: string, packageHash: string): boolean => {
-  const packageRecordPath = path.join(APERIUM_INSTALLED_PACKAGES_DIR, `${packageName}.json`);
-  if (fs.existsSync(packageRecordPath)) {
-    try {
-      const record = JSON.parse(fs.readFileSync(packageRecordPath, 'utf8'));
-      if (record.name === packageName && record.hash === packageHash) {
-        return true;
-      } else if (record.name === packageName && record.hash !== packageHash) {
-        console.warn(chalk.yellow(`Warning: Package "${packageName}" is already installed but with a different hash. Consider reinstalling or updating.`));
-      }
-    } catch (e) {
-      console.error(chalk.red(`Error reading installed package record for "${packageName}":`), e);
-    }
-  }
-  return false;
-};
 
 const setupAperiumStructure = (targetFolder: string) => {
   try {
@@ -169,7 +167,7 @@ const getOS = async (): Promise<string> => {
           } else {
             const osName = unameStdout.trim().toLowerCase();
             if (osName.includes('linux')) {
-              resolve('linux');
+              resolve('linux'); // Generic Linux if specific distro not found via os-release
             } else {
               resolve(osName);
             }
@@ -199,16 +197,16 @@ const getOS = async (): Promise<string> => {
       } else {
         if (id) {
           console.log(chalk.yellow(`Warning: Specific scripts for ID "${id}" are not available. Attempting generic approach.`));
-          resolve(id);
+          resolve(id); // Return the ID if it's not a recognized one, might still be useful
         } else {
-          resolve('unknown');
+          resolve('unknown'); // Fallback if no ID is found
         }
       }
     });
   });
 };
 
-const executeScriptContent = async (scriptContent: string, templateName: string, promptForSudo: boolean = true): Promise<void> => {
+const executeScriptContent = async (scriptContent: string, templateName: string): Promise<void> => {
     return new Promise(async (resolve, reject) => {
         if (!scriptContent.trim()) {
             console.log(chalk.yellow(`Script content to run for "${templateName}" is empty.`));
@@ -216,24 +214,14 @@ const executeScriptContent = async (scriptContent: string, templateName: string,
             return;
         }
 
-        let command = 'bash';
-        let args: string[] = [];
-        let useSudo = false;
-
-        if (promptForSudo) {
-          const answers = await inquirer.prompt([
-            {
-              type: 'confirm',
-              name: 'needsSudo',
-              message: chalk.yellow('This installation script may require administrator (sudo) privileges. Do you want to run it with sudo?'),
-              default: true,
-            }
-          ]);
-          useSudo = answers.needsSudo;
-        }
-
+        let command = 'sudo';
+        let args: string[] = ['bash'];
+        
         scriptContent = scriptContent.replace(/apt install/g, 'apt install -y');
         scriptContent = scriptContent.replace(/pacman -S/g, 'pacman -S --noconfirm');
+        scriptContent = scriptContent.replace(/dnf install/g, 'dnf install -y');
+        scriptContent = scriptContent.replace(/yum install/g, 'yum install -y');
+        scriptContent = scriptContent.replace(/zypper install/g, 'zypper install -y');
 
         console.log(chalk.green(`Running installation script for "${templateName}"... Please wait...`));
         const tempScriptPath = path.join(os.tmpdir(), `aper_script_${Date.now()}.sh`);
@@ -241,25 +229,22 @@ const executeScriptContent = async (scriptContent: string, templateName: string,
         try {
             fs.writeFileSync(tempScriptPath, scriptContent, { mode: 0o755 });
 
-            if (useSudo) {
-                command = 'sudo';
-                args = ['bash', tempScriptPath];
-            } else {
-                command = 'bash';
-                args = [tempScriptPath];
-            }
+            args.push(tempScriptPath);
 
             const child = spawn(command, args, {
                 stdio: ['pipe', 'pipe', 'pipe'],
-                shell: false 
+                shell: false  
             });
 
             let stdoutBuffer = '';
             let stderrBuffer = '';
 
+            const progressInterval = setInterval(() => {
+                process.stdout.write(chalk.gray('.'));
+            }, 500);
+
             child.stdout?.on('data', (data) => {
                 stdoutBuffer += data.toString();
-                process.stdout.write(chalk.gray('.'));
             });
             child.stderr?.on('data', (data) => {
                 stderrBuffer += data.toString();
@@ -267,6 +252,7 @@ const executeScriptContent = async (scriptContent: string, templateName: string,
             });
 
             child.on('close', (code) => {
+                clearInterval(progressInterval);
                 fs.removeSync(tempScriptPath);
 
                 if (code !== 0) {
@@ -283,13 +269,14 @@ const executeScriptContent = async (scriptContent: string, templateName: string,
             });
 
             child.on('error', (err) => {
-                fs.removeSync(tempScriptPath); 
+                clearInterval(progressInterval);
+                fs.removeSync(tempScriptPath);
                 console.error(chalk.red(`An unexpected error occurred while running "${templateName}" installation script:`), err);
                 reject(err);
             });
 
         } catch (execError: any) {
-            fs.removeSync(tempScriptPath); 
+            fs.removeSync(tempScriptPath);
             console.error(chalk.red(`Could not run "${templateName}" installation script:`), execError);
             reject(execError);
         }
@@ -364,8 +351,8 @@ const applyNixOSConfiguration = async (packageListString: string, templateName: 
     try {
       console.log(chalk.blue(`Creating NixOS module for "${templateName}" at ${modulePath}. This requires sudo permissions.`));
       const tempModulePath = path.join(os.tmpdir(), moduleFileName);
-      fs.writeFileSync(tempModulePath, moduleContent); // Write to a temp file first
-      await runSudoCommand('mv', [tempModulePath, modulePath], `Moving module to ${modulePath}...`); // Then move with sudo
+      fs.writeFileSync(tempModulePath, moduleContent);
+      await runSudoCommand('mv', [tempModulePath, modulePath], `Moving module to ${modulePath}...`);
       console.log(chalk.green(`Created NixOS module for "${templateName}" at ${modulePath}.`));
     } catch (error) {
       console.error(chalk.red(`Error creating NixOS module for "${templateName}":`), error);
@@ -408,8 +395,8 @@ const applyNixOSConfiguration = async (packageListString: string, templateName: 
       try {
         console.log(chalk.blue(`Updating ${nixConfigPath} with new module import. This requires sudo permissions.`));
         const tempNixConfigPath = path.join(os.tmpdir(), 'configuration.nix.tmp');
-        fs.writeFileSync(tempNixConfigPath, currentConfigContent); // Write to a temp file first
-        await runSudoCommand('mv', [tempNixConfigPath, nixConfigPath], `Moving updated configuration to ${nixConfigPath}...`); // Then move with sudo
+        fs.writeFileSync(tempNixConfigPath, currentConfigContent);
+        await runSudoCommand('mv', [tempNixConfigPath, nixConfigPath], `Moving updated configuration to ${nixConfigPath}...`);
       } catch (error) {
         console.error(chalk.red(`Error updating ${nixConfigPath} with import: `), error);
         reject(new Error(`Failed to update main configuration.nix.`));
@@ -461,7 +448,7 @@ const executeLegacySetupScript = async (scriptPath: string, targetFolder: string
   if (fs.existsSync(scriptPath)) {
     console.log(chalk.blue(`Installation script found for template "${templateName}": ${path.basename(scriptPath)}`));
     const scriptContent = fs.readFileSync(scriptPath, 'utf8');
-    await executeScriptContent(scriptContent, templateName, false);
+    await executeScriptContent(scriptContent, templateName);
   } else {
       console.log(chalk.yellow(`Specified installation script (${path.basename(scriptPath)}) not found for "${templateName}".`));
   }
@@ -505,17 +492,12 @@ const installTemplateFromDefaultRepo = async (templateName: string) => {
           return;
       }
 
-      if (fs.existsSync(targetFolder)) {
-        console.log(chalk.yellow(`"${tName}" already exists, skipping.`));
-        return;
-      }
-
       fs.ensureDirSync(targetFolder);
       try {
         await fs.copy(sourceTemplatePath, targetFolder);
         console.log(chalk.green(`"${tName}" template successfully copied to: ${targetFolder}`));
         
-        setupAperiumStructure(targetFolder); 
+        setupAperiumStructure(targetFolder);
 
         const setupScriptPath = path.join(targetFolder, 'setup.sh');
         await executeLegacySetupScript(setupScriptPath, targetFolder, tName);
@@ -530,10 +512,6 @@ const installTemplateFromDefaultRepo = async (templateName: string) => {
 
     if (!fs.existsSync(sourceTemplatePath)) {
       console.error(chalk.red(`Error: Template "${templateName}" not found in the repository's "packs" folder.`));
-      process.exit(1);
-    }
-    if (fs.existsSync(targetFolder)) {
-      console.error(chalk.yellow(`Error: Target folder "${targetFolder}" already exists. Please use a different name.`));
       process.exit(1);
     }
 
@@ -559,53 +537,89 @@ const createNewAprPackage = async (packageName: string) => {
 
   console.log(chalk.blue(`Creating a new .apr package named "${packageName}"...`));
 
-  const answers = await inquirer.prompt([
+  const creationTypeAnswer = await inquirer.prompt([
     {
-      type: 'input',
-      name: 'archScript',
-      message: chalk.cyan('Enter installation commands for Arch Linux (can be left blank):'),
-      default: ''
-    },
-    {
-      type: 'input',
-      name: 'debianScript',
-      message: chalk.cyan('Enter installation commands for Debian/Ubuntu (can be left blank):'),
-      default: ''
-    },
-    {
-      type: 'input',
-      name: 'nixosPackages',
-      message: chalk.cyan('Enter NixOS packages to install (comma-separated, e.g., neofetch, git, vim - can be left blank):'),
-      default: ''
+      type: 'list',
+      name: 'scriptType',
+      message: chalk.cyan('Would you like to provide a generic bash script or distribution-specific commands?'),
+      choices: [
+        { name: 'Generic Bash Script (for all Linux)', value: 'generic' },
+        { name: 'Distribution-Specific Commands (Arch, Debian, NixOS)', value: 'specific' },
+      ],
+      default: 'specific'
     }
   ]);
+
+  let answers: any = {};
+  if (creationTypeAnswer.scriptType === 'generic') {
+    answers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'genericScript',
+        message: chalk.cyan('Enter the generic bash installation script (can be left blank):'),
+        default: ''
+      }
+    ]);
+  } else {
+    answers = await inquirer.prompt([
+      {
+        type: 'input',
+        name: 'archScript',
+        message: chalk.cyan('Enter installation commands for Arch Linux (can be left blank):'),
+        default: ''
+      },
+      {
+        type: 'input',
+        name: 'debianScript',
+        message: chalk.cyan('Enter installation commands for Debian/Ubuntu (can be left blank):'),
+        default: ''
+      },
+      {
+        type: 'input',
+        name: 'nixosPackages',
+        message: chalk.cyan('Enter NixOS packages to install (comma-separated, e.g., neofetch, git, vim - can be left blank):'),
+        default: ''
+      }
+    ]);
+  }
 
   const zip = new AdmZip();
 
   try {
-    const packageMeta = {
+    const packageMeta: {
+        name: string;
+        version: string;
+        description: string;
+        archScriptEnc?: string;
+        archScriptHash?: string;
+        debianScriptEnc?: string;
+        debianScriptHash?: string;
+        nixosPackagesEnc?: string;
+        nixosPackagesHash?: string;
+        genericScriptEnc?: string;
+        genericScriptHash?: string;
+    } = {
       name: packageName,
       version: "1.0.0",
-      archScriptEnc: '',
-      archScriptHash: '',
-      debianScriptEnc: '',
-      debianScriptHash: '',
-      nixosPackagesEnc: '',
-      nixosPackagesHash: '',
       description: 'Aperium Package',
     };
 
-    if (answers.archScript) {
-      packageMeta.archScriptEnc = encrypt(answers.archScript);
-      packageMeta.archScriptHash = calculateHash(answers.archScript);
-    }
-    if (answers.debianScript) {
-      packageMeta.debianScriptEnc = encrypt(answers.debianScript);
-      packageMeta.debianScriptHash = calculateHash(answers.debianScript);
-    }
-    if (answers.nixosPackages) {
-      packageMeta.nixosPackagesEnc = encrypt(answers.nixosPackages);
-      packageMeta.nixosPackagesHash = calculateHash(answers.nixosPackages);
+    if (creationTypeAnswer.scriptType === 'generic' && answers.genericScript) {
+      packageMeta.genericScriptEnc = encrypt(answers.genericScript);
+      packageMeta.genericScriptHash = calculateHash(answers.genericScript);
+    } else if (creationTypeAnswer.scriptType === 'specific') {
+      if (answers.archScript) {
+        packageMeta.archScriptEnc = encrypt(answers.archScript);
+        packageMeta.archScriptHash = calculateHash(answers.archScript);
+      }
+      if (answers.debianScript) {
+        packageMeta.debianScriptEnc = encrypt(answers.debianScript);
+        packageMeta.debianScriptHash = calculateHash(answers.debianScript);
+      }
+      if (answers.nixosPackages) {
+        packageMeta.nixosPackagesEnc = encrypt(answers.nixosPackages);
+        packageMeta.nixosPackagesHash = calculateHash(answers.nixosPackages);
+      }
     }
 
     zip.addFile('package.json', Buffer.from(JSON.stringify(packageMeta, null, 2)), 'Package metadata');
@@ -646,46 +660,42 @@ const installFromAprFile = async (aprFilePath: string) => {
     }
     packageMeta = JSON.parse(fs.readFileSync(packageMetaPath, 'utf8'));
 
-    const packageCombinedHash = calculateHash(
-        (packageMeta.archScriptEnc || '') + 
-        (packageMeta.debianScriptEnc || '') + 
-        (packageMeta.nixosPackagesEnc || '')
-    );
-
-    if (isPackageInstalled(packageMeta.name, packageCombinedHash)) {
-      console.log(chalk.yellow(`Package "${packageMeta.name}" is already installed with the same version and configuration. Skipping installation.`));
-      process.exit(0);
-    }
-
-    const osType = await getOS();
     let scriptToExecuteEnc: string | null = null;
     let scriptToExecuteHash: string | null = null;
     let scriptNameForLog: string = 'unknown script';
     let scriptContent: string | null = null;
     let nixosPackagesContent: string | null = null;
 
-    if (osType === 'arch' && packageMeta.archScriptEnc) {
-      scriptToExecuteEnc = packageMeta.archScriptEnc;
-      scriptToExecuteHash = packageMeta.archScriptHash;
-      scriptNameForLog = 'Arch installation script';
-      console.log(chalk.blue(`System detected as Arch-based. Searching for Arch installation script.`));
-    } else if (osType === 'debian' && packageMeta.debianScriptEnc) {
-      scriptToExecuteEnc = packageMeta.debianScriptEnc;
-      scriptToExecuteHash = packageMeta.debianScriptHash;
-      scriptNameForLog = 'Debian installation script';
-      console.log(chalk.blue(`System detected as Debian-based. Searching for Debian installation script.`));
-    } else if (osType === 'nixos' && packageMeta.nixosPackagesEnc) {
-      scriptToExecuteEnc = packageMeta.nixosPackagesEnc;
-      scriptToExecuteHash = packageMeta.nixosPackagesHash;
-      scriptNameForLog = 'NixOS package list';
-      nixosPackagesContent = decrypt(scriptToExecuteEnc!);
-      console.log(chalk.blue(`System detected as NixOS. Searching for NixOS package list.`));
+    if (packageMeta.genericScriptEnc) {
+        scriptToExecuteEnc = packageMeta.genericScriptEnc;
+        scriptToExecuteHash = packageMeta.genericScriptHash;
+        scriptNameForLog = 'Generic Bash installation script';
+        console.log(chalk.blue(`Found generic Bash script. Attempting to use it.`));
     } else {
-      console.log(chalk.yellow(`Warning: No suitable or generic installation script found for detected system (${osType}).`));
+        const osType = await getOS();
+        if (osType === 'arch' && packageMeta.archScriptEnc) {
+            scriptToExecuteEnc = packageMeta.archScriptEnc;
+            scriptToExecuteHash = packageMeta.archScriptHash;
+            scriptNameForLog = 'Arch installation script';
+            console.log(chalk.blue(`System detected as Arch-based. Searching for Arch installation script.`));
+        } else if (osType === 'debian' && packageMeta.debianScriptEnc) {
+            scriptToExecuteEnc = packageMeta.debianScriptEnc;
+            scriptToExecuteHash = packageMeta.debianScriptHash;
+            scriptNameForLog = 'Debian installation script';
+            console.log(chalk.blue(`System detected as Debian-based. Searching for Debian installation script.`));
+        } else if (osType === 'nixos' && packageMeta.nixosPackagesEnc) {
+            scriptToExecuteEnc = packageMeta.nixosPackagesEnc;
+            scriptToExecuteHash = packageMeta.nixosPackagesHash;
+            scriptNameForLog = 'NixOS package list';
+            nixosPackagesContent = decrypt(scriptToExecuteEnc!);
+            console.log(chalk.blue(`System detected as NixOS. Searching for NixOS package list.`));
+        } else {
+            console.log(chalk.yellow(`Warning: No suitable or generic installation script found for detected system (${osType}).`));
+        }
     }
 
     if (scriptToExecuteEnc) {
-      if (osType !== 'nixos') {
+      if (scriptNameForLog !== 'NixOS package list') {
         const decryptedScript = decrypt(scriptToExecuteEnc);
         const calculatedHash = calculateHash(decryptedScript);
 
@@ -706,11 +716,16 @@ const installFromAprFile = async (aprFilePath: string) => {
         await applyNixOSConfiguration(nixosPackagesContent, packageMeta.name);
       }
     } else {
-      console.log(chalk.yellow(`No suitable script found to execute for "${packageMeta.name}" package.`));
+      console.log(chalk.yellow(`No executable script found in "${packageMeta.name}" package.`));
     }
 
-    registerInstalledPackage(packageMeta.name, packageCombinedHash);
-    console.log(chalk.green(`Package "${packageMeta.name}" installation recorded.`));
+    const packageCombinedHash = calculateHash(
+        (packageMeta.archScriptEnc || '') +
+        (packageMeta.debianScriptEnc || '') +
+        (packageMeta.nixosPackagesEnc || '') +
+        (packageMeta.genericScriptEnc || '')
+    );
+    await registerInstalledPackage(packageMeta.name, packageCombinedHash); // Now calls runSudoCommand internally
 
   } catch (error) {
     console.error(chalk.red('An error occurred during installation from .apr file:'), error);
@@ -751,6 +766,24 @@ const viewAprFileContent = async (aprFilePath: string) => {
     console.log(chalk.blue(`Package Version: ${packageMeta.version}`));
     console.log(chalk.blue(`Description: ${packageMeta.description || 'None'}\n`));
 
+    if (packageMeta.genericScriptEnc) {
+        try {
+            const decryptedScript = decrypt(packageMeta.genericScriptEnc);
+            const calculatedHash = calculateHash(decryptedScript);
+            if (calculatedHash === packageMeta.genericScriptHash) {
+                console.log(chalk.cyan('--- Generic Bash Installation Script ---'));
+                console.log(chalk.white(decryptedScript));
+                console.log(chalk.cyan('----------------------------------------\n'));
+            } else {
+                console.error(chalk.red('Warning: Generic script hash verification failed. Script may have been tampered with.'));
+            }
+        } catch (e: any) {
+            console.error(chalk.red('Failed to decrypt or malformed generic script:'), e.message);
+        }
+    } else {
+        console.log(chalk.yellow('No generic bash installation script found.\n'));
+    }
+
     if (packageMeta.debianScriptEnc) {
       try {
         const decryptedScript = decrypt(packageMeta.debianScriptEnc);
@@ -778,7 +811,7 @@ const viewAprFileContent = async (aprFilePath: string) => {
           console.log(chalk.white(decryptedScript));
           console.log(chalk.cyan('--------------------------------------\n'));
         } else {
-          console.error(chalk.red('Warning: Arch script hash verification failed. Script may have been tampered with.')); 
+          console.error(chalk.red('Warning: Arch script hash verification failed. Script may have been tampered with.'));
         }
       } catch (e: any) {
         console.error(chalk.red('Failed to decrypt or malformed Arch script:'), e.message);
@@ -792,11 +825,11 @@ const viewAprFileContent = async (aprFilePath: string) => {
         const decryptedPackages = decrypt(packageMeta.nixosPackagesEnc);
         const calculatedHash = calculateHash(decryptedPackages);
         if (calculatedHash === packageMeta.nixosPackagesHash) {
-          console.log(chalk.cyan('--- NixOS Packages to Install ---'));
-          console.log(chalk.white(decryptedPackages.split(',').map(p => `- ${p.trim()}`).join('\n')));
-          console.log(chalk.cyan('-----------------------------------\n'));
+          console.log(chalk.cyan('--- NixOS Package List ---'));
+          console.log(chalk.white(decryptedPackages));
+          console.log(chalk.cyan('--------------------------\n'));
         } else {
-          console.error(chalk.red('Warning: NixOS package list hash verification failed. List may have been tampered with.'));
+          console.error(chalk.red('Warning: NixOS package list hash verification failed. Data may have been tampered with.'));
         }
       } catch (e: any) {
         console.error(chalk.red('Failed to decrypt or malformed NixOS package list:'), e.message);
@@ -806,7 +839,7 @@ const viewAprFileContent = async (aprFilePath: string) => {
     }
 
   } catch (error) {
-    console.error(chalk.red('An error occurred while viewing the .apr file:'), error);
+    console.error(chalk.red('An error occurred while viewing .apr file content:'), error);
     process.exit(1);
   } finally {
     if (fs.existsSync(tempExtractDir)) {
@@ -815,62 +848,88 @@ const viewAprFileContent = async (aprFilePath: string) => {
   }
 };
 
-const main = async () => {
-  if (args.length === 0) {
-    displayUsage();
-    process.exit(0);
-  }
+const ensureSudo = async (): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    console.log(chalk.yellow('Aperium needs administrator (sudo) privileges for installation.'));
+    console.log(chalk.yellow('You may be prompted for your password.'));
+    const child = spawn('sudo', ['-v'], { stdio: 'inherit' });
 
-  if (args[0] === 'install') {
-    if (args.length === 2 && args[1].toLowerCase().endsWith('.apr')) {
-      await installFromAprFile(args[1]);
-    } else if (args.length >= 3 && args[1] === '-r') {
-      const templateName = args[2];
-      if (templateName === 'all') { 
-          console.error(chalk.red('Error: Installing all templates from repository is not supported. Please specify a template name.'));
+    child.on('close', (code) => {
+      if (code === 0) {
+        console.log(chalk.green('Sudo access granted.'));
+        resolve();
+      } else {
+        console.error(chalk.red('Error: Sudo access denied or cancelled. Cannot proceed with installation.'));
+        reject(new Error('Sudo access denied.'));
+      }
+    });
+
+    child.on('error', (err) => {
+      console.error(chalk.red(`Error checking sudo access: ${err.message}`));
+      reject(err);
+    });
+  });
+};
+
+
+const run = async () => {
+  const command = args[0];
+  const value = args[1];
+  const option = args[2];
+
+  switch (command) {
+    case 'install':
+      try {
+        await ensureSudo(); // This ensures initial sudo access
+      } catch (error) {
+        process.exit(1);
+      }
+
+      if (!value) {
+        console.error(chalk.red('Error: Missing file or template name for install command.'));
+        displayUsage();
+        process.exit(1);
+      }
+      if (value === '-r') {
+        if (!option) {
+          console.error(chalk.red('Error: Missing template name for repository install.'));
           displayUsage();
           process.exit(1);
+        }
+        await installTemplateFromDefaultRepo(option);
+      } else {
+        await installFromAprFile(value);
       }
-      await installTemplateFromDefaultRepo(templateName);
-    } else {
-      console.error(chalk.red('Error: You must provide a valid argument for the "install" command.'));
-      displayUsage();
-      process.exit(1);
-    }
-    process.exit(0);
-  }
-
-  switch (args[0]) {
+      break;
+    case 'new':
+      if (!value) {
+        console.error(chalk.red('Error: Missing package name for new command.'));
+        displayUsage();
+        process.exit(1);
+      }
+      await createNewAprPackage(value);
+      break;
+    case 'view':
+      if (!value) {
+        console.error(chalk.red('Error: Missing .apr file path for view command.'));
+        displayUsage();
+        process.exit(1);
+      }
+      await viewAprFileContent(value);
+      break;
     case 'version':
-      console.log(`Aper ${version}`);
-      process.exit(0);
+      console.log(chalk.green(`Aperium version: ${version}`));
+      break;
     case 'help':
       displayHelp();
-      process.exit(0);
-    case 'new':
-      if (args.length > 1) {
-        const packageName = args[1];
-        await createNewAprPackage(packageName);
-      } else {
-        console.error(chalk.red('Error: You must provide a package name for the "new" command.'));
-        displayUsage();
-        process.exit(1);
-      }
-      process.exit(0);
-    case 'view':
-      if (args.length === 2 && args[1].toLowerCase().endsWith('.apr')) {
-        await viewAprFileContent(args[1]);
-      } else {
-        console.error(chalk.red('Error: You must provide a .apr file path for the "view" command.'));
-        displayUsage();
-        process.exit(1);
-      }
-      process.exit(0);
+      break;
     default:
-      console.error(chalk.red('Error: Invalid command.'));
+      if (command) {
+        console.error(chalk.red(`Error: Unknown command "${command}".`));
+      }
       displayUsage();
       process.exit(1);
   }
 };
 
-main();
+run();
