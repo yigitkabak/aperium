@@ -126,10 +126,8 @@ const registerInstalledPackage = async (packageName: string, packageHash: string
   const recordContent = JSON.stringify(record, null, 2);
 
   try {
-    // Ensure the directory exists with sudo if necessary
     await runSudoCommand('mkdir', ['-p', APERIUM_INSTALLED_PACKAGES_DIR], `Ensuring package record directory exists: ${APERIUM_INSTALLED_PACKAGES_DIR}`);
     
-    // Write the file using sudo
     console.log(chalk.blue(`Recording installation for "${packageName}"...`));
     const tempRecordPath = path.join(os.tmpdir(), `${packageName}.json.tmp`);
     fs.writeFileSync(tempRecordPath, recordContent);
@@ -137,7 +135,6 @@ const registerInstalledPackage = async (packageName: string, packageHash: string
     console.log(chalk.green(`Package "${packageName}" installation recorded.`));
   } catch (error) {
     console.error(chalk.red(`Error recording installed package "${packageName}":`), error);
-    // Do not exit, as the primary installation might have succeeded.
   }
 };
 
@@ -167,7 +164,7 @@ const getOS = async (): Promise<string> => {
           } else {
             const osName = unameStdout.trim().toLowerCase();
             if (osName.includes('linux')) {
-              resolve('linux'); // Generic Linux if specific distro not found via os-release
+              resolve('linux');
             } else {
               resolve(osName);
             }
@@ -197,9 +194,9 @@ const getOS = async (): Promise<string> => {
       } else {
         if (id) {
           console.log(chalk.yellow(`Warning: Specific scripts for ID "${id}" are not available. Attempting generic approach.`));
-          resolve(id); // Return the ID if it's not a recognized one, might still be useful
+          resolve(id);
         } else {
-          resolve('unknown'); // Fallback if no ID is found
+          resolve('unknown');
         }
       }
     });
@@ -214,8 +211,14 @@ const executeScriptContent = async (scriptContent: string, templateName: string)
             return;
         }
 
-        let command = 'sudo';
-        let args: string[] = ['bash'];
+        const isTermux = process.env.TERMUX_VERSION !== undefined;
+        let command = 'bash';
+        let args: string[] = [];
+
+        if (!isTermux) {
+          command = 'sudo';
+          args.push('bash');
+        }
         
         scriptContent = scriptContent.replace(/apt install/g, 'apt install -y');
         scriptContent = scriptContent.replace(/pacman -S/g, 'pacman -S --noconfirm');
@@ -285,6 +288,23 @@ const executeScriptContent = async (scriptContent: string, templateName: string)
 
 const runSudoCommand = async (command: string, args: string[], message: string): Promise<void> => {
     return new Promise((resolve, reject) => {
+        const isTermux = process.env.TERMUX_VERSION !== undefined;
+        if (isTermux) {
+            console.log(chalk.yellow(`Termux detected. Attempting to run command directly: ${command} ${args.join(' ')}`));
+            const child = spawn(command, args, { stdio: 'inherit' });
+            child.on('close', (code) => {
+                if (code !== 0) {
+                    reject(new Error(`Command failed with code ${code}: ${command} ${args.join(' ')}`));
+                } else {
+                    resolve();
+                }
+            });
+            child.on('error', (err) => {
+                reject(new Error(`Failed to run command directly in Termux: ${err.message}`));
+            });
+            return;
+        }
+
         console.log(chalk.blue(message));
         const child = spawn('sudo', [command, ...args], { stdio: 'inherit' });
 
@@ -725,7 +745,7 @@ const installFromAprFile = async (aprFilePath: string) => {
         (packageMeta.nixosPackagesEnc || '') +
         (packageMeta.genericScriptEnc || '')
     );
-    await registerInstalledPackage(packageMeta.name, packageCombinedHash); // Now calls runSudoCommand internally
+    await registerInstalledPackage(packageMeta.name, packageCombinedHash);
 
   } catch (error) {
     console.error(chalk.red('An error occurred during installation from .apr file:'), error);
@@ -849,6 +869,13 @@ const viewAprFileContent = async (aprFilePath: string) => {
 };
 
 const ensureSudo = async (): Promise<void> => {
+  const isTermux = process.env.TERMUX_VERSION !== undefined;
+
+  if (isTermux) {
+    console.log(chalk.yellow('Termux environment detected. Sudo is not required.'));
+    return Promise.resolve();
+  }
+
   return new Promise((resolve, reject) => {
     console.log(chalk.yellow('Aperium needs administrator (sudo) privileges for installation.'));
     console.log(chalk.yellow('You may be prompted for your password.'));
@@ -880,7 +907,7 @@ const run = async () => {
   switch (command) {
     case 'install':
       try {
-        await ensureSudo(); // This ensures initial sudo access
+        await ensureSudo();
       } catch (error) {
         process.exit(1);
       }
