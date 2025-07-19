@@ -1,4 +1,4 @@
-p# Aperium: Modern Package Manager
+# Aperium: Modern Package Manager
 
 Aperium is a product of the Aperture Labs Ecosystem.
 
