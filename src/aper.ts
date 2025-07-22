@@ -79,7 +79,7 @@ const displayUsage = () => {
   console.log(`  aper view <file.apm>         # Displays the contents of an .apm package.`);
   console.log(`  aper version                    # Shows the Aperium version.`);
   console.log(`  aper help                         # Shows the help menu.`);
-  console.log('\nAperture Labs. All rights reserved.');
+  console.log('Yiğit KABAK. All rights reserved.');
   console.log(`For more info: https://github.com/yigitkabak/aperium`);
 };
 
