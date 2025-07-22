@@ -96,7 +96,7 @@ if (args[0] === 'naper') {
 if (args.length === 0) {
   console.error(
     chalk.yellow('Aperium, ') + 
-    chalk.blue('developed by Aperture Labs.') + 
+    chalk.blue('developed by Yiğit KABAK') + 
     chalk.green(' is a product designed to enhance your development process.') + 
     chalk.cyan('\nDescription: ') + 
     'Aperium is designed to simplify your software development workflow. ' +
