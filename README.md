@@ -1,5 +1,7 @@
 # Aperium: Modern Package Manager
 
+Aperium is a product of the openbyte ecosystem.
+
 Aperium is not just a package installer, but also a tool that allows you to easily manage and share the custom packages you develop. It is designed to make the package installation process in the Node.js ecosystem more efficient, simple, and user-friendly, thereby saving developers time. Aperium allows you to install both external dependencies (packages downloaded from npm) and your own custom packages. With Aperium, you can easily install not only popular open-source packages but also modules from your own projects.
 
 To upload a package to Aperium, you can create a pull request to our GitHub repository.
@@ -89,7 +91,7 @@ That's it! You can now use the `aper` command directly from your terminal.
 
 ## Huh Details System
 
-Use the `.huh` file extension, another product of Yiğit KABAK, via Aperium.
+Use the `.huh` file extension, another product of openbyte, via Aperium.
 
 ```
 huhinfo file.huh
