@@ -79,7 +79,7 @@ const displayUsage = () => {
   console.log(`  aper view <file.apm>         # Displays the contents of an .apm package.`);
   console.log(`  aper version                    # Shows the Aperium version.`);
   console.log(`  aper help                         # Shows the help menu.`);
-  console.log('openbyte. All rights reserved.');
+  console.log('Yiğit KABAK. All rights reserved.');
   console.log(`For more info: https://github.com/yigitkabak/aperium`);
 };
 
@@ -95,10 +95,10 @@ const displayHelp = () => {
 
   console.log('➕ Creating a New Package:');
   console.log(`  aper new <package_name>`);
-  console.log(`    -> Creates a new .apm package with the specified installation scripts/settings.\n`);
+  console.log(`    -> Creates a new .apr package with the specified installation scripts/settings.\n`);
 
   console.log('🔍 Viewing Package Contents:');
-  console.log(`  aper view <file.apm>`);
+  console.log(`  aper view <file.apr>`);
   console.log(`    -> Displays the installation scripts/settings inside an .apm package file.\n`);
 
   console.log('ℹ️ Information Commands:');
