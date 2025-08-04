@@ -31,17 +31,17 @@ When this command is run, only the necessary output is displayed and unnecessary
 
 One of Aperium's most powerful features is that it allows users to install their own custom-developed packages. The `aper` command allows you to include not only external dependencies but also modules you have developed and shared in your project.
 
-**To install a custom `.apr` package:**
+**To install a custom `.apm` package:**
 
-NOTE: The `.apr` system only works on Arch, Debian and Nixos based systems.
+NOTE: The `.apm` system only works on Arch, Debian and Nixos based systems.
 ```
-aper install <fileName.apr>
+aper install <fileName.apm>
 ```
 With this command, you can install your own `.apr` packages and share them with others. When you develop a module or project, you can easily share it with other developers using Aperium.
 
 When this command is run, the following process occurs:
 
-* The `.apr` package is opened and its contents are analyzed.
+* The `.apm` package is opened and its contents are analyzed.
 * Your system is detected.
 * If the package has already been installed or an existing installation is detected, you are informed.
 * The relevant installation scripts (or package lists for NixOS) are run.
@@ -56,15 +56,15 @@ This command allows you to download and install a specific template from Aperium
 aper install -r test
 ```
 
-**To create a new `.apr` package:**
+**To create a new `.apm` package:**
 ```
 aper new <package_name>
 ```
-This command helps you create a new `.apr` package where you can define platform-specific (Debian, Arch, NixOS) installation scripts or package lists.
+This command helps you create a new `.apm` package where you can define platform-specific (Debian, Arch, NixOS) installation scripts or package lists.
 
-**To view the contents of an `.apr` package:**
+**To view the contents of an `.apm` package:**
 ```
-aper view <fileName.apr>
+aper view <fileName.apm>
 ```
 This command allows you to view the installation scripts and configurations inside an `.apr` file, so you can see what it does before installing a package.
 
