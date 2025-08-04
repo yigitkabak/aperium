@@ -6,15 +6,13 @@
   "bin": {
     "aper": "./dist/aper.js",
     "naper": "./dist/naper.js",
-    "aperium": "./dist/aperium.js",
-    "huhinfo": "./dist/huh.js"
+    "aperium": "./dist/aperium.js"
   },
   "scripts": {
     "build": "tsc; npm link",
     "aper": "npm run build && node dist/aper.js",
     "naper": "npm run build && node dist/naper.js",
-    "aperium": "npm run build && node dist/naper.js",
-    "huhinfo": "npm run build && node dist/huh.js"
+    "aperium": "npm run build && node dist/naper.js"
   },
   "dependencies": {
     "@types/adm-zip": "^0.5.7",
