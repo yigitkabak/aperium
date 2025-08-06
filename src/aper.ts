@@ -7,8 +7,7 @@ import { spawn, exec } from 'child_process';
 import * as crypto from 'crypto';
 import inquirer from 'inquirer';
 import AdmZip from 'adm-zip';
-import express from 'express';
-import cors from 'cors';
+
 
 interface AperiumJson {
   project: {
@@ -672,83 +671,6 @@ const viewApmFileContent = async (apmFilePath: string, encryptionKey: Buffer) =>
   }
 };
 
-const getDirectoryStructure = (dirPath: string, rootPath: string = dirPath) => {
-  const structure: { [key: string]: any } = {};
-  const items = fs.readdirSync(dirPath);
-  for (const item of items) {
-    const itemPath = path.join(dirPath, item);
-    const stat = fs.statSync(itemPath);
-    if (stat.isDirectory()) {
-      structure[item] = getDirectoryStructure(itemPath, rootPath);
-    } else {
-      structure[item] = 'file';
-    }
-  }
-  return structure;
-};
-
-const startApiServer = async (port: number = 8000) => {
-  const app = express();
-  app.use(cors());
-  app.use(express.json());
-  console.log('Starting Aperium API server...');
-  app.get('/api/packs', async (req, res) => {
-    console.log(`[${new Date().toISOString()}] Received request for /api/packs`);
-    const tempCloneRoot = path.join(os.tmpdir(), `.aperium_api_clone_${Date.now()}`);
-    try {
-      fs.ensureDirSync(tempCloneRoot);
-      console.log(`Cloning ${DEFAULT_REPO_URL} for API response...`);
-      await simpleGit({
-        baseDir: tempCloneRoot,
-        binary: 'git'
-      }).clone(DEFAULT_REPO_URL, 'repo');
-      const repoPath = path.join(tempCloneRoot, 'repo');
-      const git = simpleGit(repoPath);
-      const packsPath = path.join(repoPath, 'repo', 'packs');
-      if (!fs.existsSync(packsPath)) {
-        throw new Error('repo/packs directory not found in the repository.');
-      }
-      const packDirs = fs.readdirSync(packsPath).filter(file => fs.statSync(path.join(packsPath, file)).isDirectory());
-      const packsData = [];
-      for (const packName of packDirs) {
-        const packDir = path.join(packsPath, packName);
-        const log = await git.log({
-          file: packDir,
-          maxCount: 1,
-        });
-        const lastCommit = log.latest;
-        const structure = getDirectoryStructure(packDir);
-        packsData.push({
-          name: packName,
-          author: lastCommit?.author_name || 'N/A',
-          date: lastCommit?.date || 'N/A',
-          message: lastCommit?.message || 'N/A',
-          hash: lastCommit?.hash || 'N/A',
-          structure: structure
-        });
-      }
-      console.log(`Successfully processed ${packsData.length} packages.`);
-      res.status(200).json(packsData);
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.error('API Error:', errorMessage);
-      res.status(500).json({
-        error: 'Failed to fetch package data.',
-        details: errorMessage
-      });
-    } finally {
-      if (fs.existsSync(tempCloneRoot)) {
-        fs.removeSync(tempCloneRoot);
-        console.log(`Cleaned up temporary directory: ${tempCloneRoot}`);
-      }
-    }
-  });
-  app.listen(port, () => {
-    console.log(`🚀 Aperium API server running on http://localhost:${port}`);
-    console.log(`Access package data at http://localhost:${port}/api/packs`);
-  });
-};
-
 const displayUsage = () => {
   console.log('\n🚀 Aperium: Modern Package Manager\n');
   console.log('Usage:');
@@ -762,7 +684,6 @@ const displayUsage = () => {
   console.log(`  aper view <file.apm>`);
   console.log(`  aper list`);
   console.log(`  aper run [script_name/file.js]`);
-  console.log(`  aper serve`);
   console.log(`  aper version`);
   console.log(`  aper help`);
   console.log('Yiğit KABAK. All rights reserved.');
@@ -803,9 +724,6 @@ const displayHelp = () => {
   console.log('🔍 Viewing Package Contents:');
   console.log(`  aper view <file.apm>`);
   console.log(`    -> Displays the installation scripts/settings inside an .apm package file.\n`);
-  console.log('📈 API Server:');
-  console.log(`  aper serve`);
-  console.log(`    -> Starts a local web server to view repository package data via an API.\n`);
   console.log('ℹ️ Information Commands:');
   console.log(`  aper version`);
   console.log(`    -> Shows the current Aperium version.\n`);
@@ -1170,9 +1088,6 @@ const run = async () => {
     case 'list':
       await listPackages();
       break;
-    case 'serve':
-      await startApiServer();
-      break;
     case 'version':
       console.log(`Aperium version: ${version}`);
       break;
@@ -1189,3 +1104,4 @@ const run = async () => {
 };
 
 run();
+
