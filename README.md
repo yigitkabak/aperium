@@ -1,90 +1,71 @@
 # Aperium: Modern Package Manager
 
-Aperium is not just a package installer, but also a tool that allows you to easily manage and share the custom packages you develop. It is designed to make the package installation process in the Node.js ecosystem more efficient, simple, and user-friendly, thereby saving developers time. Aperium allows you to install both external dependencies (packages downloaded from npm) and your own custom packages. With Aperium, you can easily install not only popular open-source packages but also modules from your own projects.
+Aperium is a command-line tool for managing projects and installing packages, templates, and modules. It's designed to streamline the workflow for developers, especially for tasks involving system-level dependencies. Aperium allows you to define and manage dependencies in a project-specific way, run scripts, and create custom installation packages.
 
-To upload a package to Aperium, you can create a pull request to our GitHub repository.
+## Key Features
 
-## Key Features of the Project:
-
-Aperium not only allows you to install packages from npm, but also enables you to download your own custom packages and include them in your projects. Using the `aper` command, you can easily install the modules you have developed or the projects you want to share with others.
-
-## How to Use Aperium:
-
-Aperium works with two main commands: `naper` and `aper`. These commands serve different purposes.
-
-### naper Command:
-```
-naper install <packageName>
-```
-This command installs external dependencies from npm. You can use this command to install popular packages such as `express` and `lodash`.
-```
-naper install express
-```
-When this command is run, only the necessary output is displayed and unnecessary information is hidden. After the installation is complete, a success message is displayed to the user:
-```
-🔍 Installing express package... ✅ express has been successfully installed.
-```
+* **Project Management**: Create and manage project-specific dependencies with a simple `aperium.json` file.
+* **Module and Template Installation**: Install modules and templates directly from a default GitHub repository.
+* **Custom Package Creation**: Create self-contained, platform-specific installation packages (`.apm` files) for easy sharing.
+* **Cross-Platform Support**: `.apm` packages can contain different scripts for various Linux distributions (Arch, Debian, NixOS) to ensure a smooth installation experience.
+* **Script Runner**: Define and run custom scripts directly from your `aperium.json` file.
+* **Local API Server**: Start a local web server to browse available repository packages.
 
 ---
 
-### Aper Command:
+## Getting Started
 
-One of Aperium's most powerful features is that it allows users to install their own custom-developed packages. The `aper` command allows you to include not only external dependencies but also modules you have developed and shared in your project.
+### Installation
 
-**To install a custom `.apm` package:**
+First, clone the Aperium repository to your local machine:
 
-NOTE: The `.apm` system only works on Arch, Debian and Nixos based systems.
-```
-aper install <fileName.apm>
-```
-With this command, you can install your own `.apr` packages and share them with others. When you develop a module or project, you can easily share it with other developers using Aperium.
-
-When this command is run, the following process occurs:
-
-* The `.apm` package is opened and its contents are analyzed.
-* Your system is detected.
-* If the package has already been installed or an existing installation is detected, you are informed.
-* The relevant installation scripts (or package lists for NixOS) are run.
-* The installation output will display the package name and a success message.
-
-**To install a template from the Aperium repository:**
-```
-aper install -r <template_name>
-```
-This command allows you to download and install a specific template from Aperium's default GitHub repository.
-```
-aper install -r test
-```
-
-**To create a new `.apm` package:**
-```
-aper new <package_name>
-```
-This command helps you create a new `.apm` package where you can define platform-specific (Debian, Arch, NixOS) installation scripts or package lists.
-
-**To view the contents of an `.apm` package:**
-```
-aper view <fileName.apm>
-```
-This command allows you to view the installation scripts and configurations inside an `.apm` file, so you can see what it does before installing a package.
-
----
-
-## Downloading and Using Aperium:
-
-First, you need to clone our GitHub repository:
-```
+```bash
 git clone https://github.com/yigitkabak/aperium
 ```
-Then, navigate to the project directory and install the necessary npm modules and build the project:
-```
+
+Next, navigate into the project directory, install the required dependencies, and build the project:
+
+```bash
 cd aperium
 npm install
 npm run build
 ```
 
-That's it! You can now use the `aper` command directly from your terminal.
+The `aper` command is now available for you to use.
 
 ---
 
-For more information, simply use the `aper help` command in your terminal.
+## Command Reference
+
+Aperium's functionality is accessed through the `aper` command.
+
+### Project & Dependency Management
+
+* **`aper init`**: Initializes a new project by creating an `aperium.json` file. This file manages your project's metadata, scripts, and dependencies.
+* **`aper install <package_name>`**: Installs a module from the official Aperium repository into your project's `aperium_modules` folder.
+* **`aper install`**: Installs all dependencies listed in your `aperium.json` file.
+* **`aper -m <module_name>`**: A shortcut for `aper install <module_name>`.
+* **`aper -m`**: A shortcut for `aper install`.
+* **`aper -um <module_name>`**: Uninstalls a specified module from `aperium_modules` and removes it from `aperium.json`.
+* **`aper list`**: Displays all dependencies currently listed in your `aperium.json`.
+
+### Custom Packages & Templates
+
+* **`aper install <file.apm>`**: Installs a local `.apm` package. **Note:** This command requires `sudo` privileges to run installation scripts.
+* **`aper -r <template_name>`**: Downloads and installs a project template from the default Aperium repository. This command also requires `sudo` privileges.
+* **`aper new <package_name>`**: Guides you through creating a new `.apm` package, allowing you to define platform-specific installation scripts.
+* **`aper view <file.apm>`**: Displays the contents of an `.apm` package, including the installation scripts, without running them.
+
+### Script Runner
+
+* **`aper run <script_name>`**: Executes a script defined in the `"scripts"` section of your `aperium.json` file.
+* **`aper run`**: Runs the default `"start"` script from `aperium.json`.
+* **`aper run <file.js>`**: Executes a specified JavaScript file directly.
+
+### Additional Commands
+
+* **`aper serve`**: Starts a local web server that provides an API to browse packages from the default repository.
+* **`aper version`**: Shows the current version of Aperium.
+* **`aper help`**: Displays a detailed list of all available commands.
+
+For more information, please check out the [official repository](https://github.com/yigitkabak/aperium) or run `aper help` in your terminal.
