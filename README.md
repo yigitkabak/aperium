@@ -42,8 +42,6 @@ Aperium's functionality is accessed through the `aper` command.
 ### Project & Dependency Management
 
 * **`aper init`**: Initializes a new project by creating an `aperium.json` file. This file manages your project's metadata, scripts, and dependencies.
-* **`aper install <package_name>`**: Installs a module from the official Aperium repository into your project's `aperium_modules` folder.
-* **`aper install`**: Installs all dependencies listed in your `aperium.json` file.
 * **`aper -m <module_name>`**: A shortcut for `aper install <module_name>`.
 * **`aper -m`**: A shortcut for `aper install`.
 * **`aper -um <module_name>`**: Uninstalls a specified module from `aperium_modules` and removes it from `aperium.json`.
@@ -58,7 +56,6 @@ Aperium's functionality is accessed through the `aper` command.
 
 ### Script Runner
 
-* **`aper run <script_name>`**: Executes a script defined in the `"scripts"` section of your `aperium.json` file.
 * **`aper run`**: Runs the default `"start"` script from `aperium.json`.
 * **`aper run <file.js>`**: Executes a specified JavaScript file directly.
 
