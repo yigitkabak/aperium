@@ -9,7 +9,6 @@ Aperium is a command-line tool for managing projects and installing packages, te
 * **Custom Package Creation**: Create self-contained, platform-specific installation packages (`.apm` files) for easy sharing.
 * **Cross-Platform Support**: `.apm` packages can contain different scripts for various Linux distributions (Arch, Debian, NixOS) to ensure a smooth installation experience.
 * **Script Runner**: Define and run custom scripts directly from your `aperium.json` file.
-* **Local API Server**: Start a local web server to browse available repository packages.
 
 ---
 
@@ -61,8 +60,6 @@ Aperium's functionality is accessed through the `aper` command.
 
 ### Additional Commands
 
-* **`aper serve`**: Starts a local web server that provides an API to browse packages from the default repository.
-* **`aper version`**: Shows the current version of Aperium.
 * **`aper help`**: Displays a detailed list of all available commands.
 
 For more information, please check out the [official repository](https://github.com/yigitkabak/aperium) or run `aper help` in your terminal.
