@@ -66,7 +66,7 @@ This command helps you create a new `.apm` package where you can define platform
 ```
 aper view <fileName.apm>
 ```
-This command allows you to view the installation scripts and configurations inside an `.apr` file, so you can see what it does before installing a package.
+This command allows you to view the installation scripts and configurations inside an `.apm` file, so you can see what it does before installing a package.
 
 ---
 
