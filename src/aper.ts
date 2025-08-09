@@ -686,7 +686,7 @@ const displayUsage = () => {
   console.log(`  aper run [script_name/file.js]`);
   console.log(`  aper version`);
   console.log(`  aper help`);
-  console.log('Yiğit KABAK. All rights reserved.');
+  console.log('openbyte. All rights reserved.');
   console.log(`For more info: https://github.com/yigitkabak/aperium`);
 };
 
