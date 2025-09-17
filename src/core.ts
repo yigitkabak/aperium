@@ -8,7 +8,7 @@ import * as crypto from 'crypto';
 import inquirer from 'inquirer';
 import AdmZip from 'adm-zip';
 
-export const version = "v0.1.0";
+export const version = "v0.0.8";
 export const DEFAULT_REPO_URL = 'https://github.com/yigitkabak/aperium-repo.git';
 export const APERIUM_CONFIG_DIR = path.join(os.homedir(), '.aperium');
 export const ENCRYPTION_KEY_FILE = path.join(APERIUM_CONFIG_DIR, 'key.enc');
