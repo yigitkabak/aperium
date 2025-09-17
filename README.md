@@ -26,8 +26,7 @@ Next, navigate into the project directory, install the required dependencies, an
 
 ```bash
 cd aperium
-npm install
-npm run build
+make
 ```
 
 The `aper` command is now available for you to use.
