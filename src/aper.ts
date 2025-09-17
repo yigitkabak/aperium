@@ -26,7 +26,7 @@ const command = args[0];
 const value = args[1];
 
 const displayUsage = () => {
-  console.log('\nAperium: Modern Package Manager\n');
+  console.log('Aperium: Modern Package Manager\n');
   console.log('Usage:');
   console.log(`  aper init`);
   console.log(`  aper install [package_name]`);
