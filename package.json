@@ -1,6 +1,6 @@
 {
   "name": "aperium",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "Aperium: A lightweight package management CLI tool",
   "main": "dist/aper.js",
   "type": "module",
@@ -8,29 +8,24 @@
     "aper": "./dist/aper.js"
   },
   "scripts": {
-    "build": "tsc && npm link",
-    "aper": "npm run build && node dist/aper.js"
+    "build": "tsc",
+    "dev": "ts-node src/aper.ts",
+    "postbuild": "npm link"
   },
   "dependencies": {
-    "@types/adm-zip": "^0.5.7",
     "adm-zip": "^0.5.16",
     "chalk": "^5.4.1",
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
     "fs-extra": "^10.1.0",
     "inquirer": "^12.7.0",
-    "multer": "^1.4.4",
-    "simple-git": "^3.28.0",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.2",
-    "unzipper": "^0.10.14"
+    "simple-git": "^3.28.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^4.17.21",
+    "@types/adm-zip": "^0.5.7",
     "@types/fs-extra": "^9.0.13",
-    "@types/multer": "^1.4.12",
-    "@types/node": "^18.19.80"
+    "@types/inquirer": "^9.0.7",
+    "@types/node": "^18.19.80",
+    "typescript": "^5.8.2",
+    "ts-node": "^10.9.2"
   },
   "keywords": [
     "aperium",
@@ -45,7 +40,7 @@
     "url": "https://github.com/yigitkabak/aperium"
   },
   "author": "Yiğit Kabak",
-  "license": "GPL",
+  "license": "GPL-3.0-or-later",
   "bugs": {
     "url": "https://github.com/yigitkabak/aperium"
   },
