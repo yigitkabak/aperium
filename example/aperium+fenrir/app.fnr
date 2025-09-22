@@ -1,0 +1,19 @@
+import express from 'express'
+import hw from 'hello-world'
+
+const app = express()
+const port = 3000
+
+fn handle_home_request(req, res) {
+  res.send(hw('World'))
+}
+
+app.get('/', handle_home_request)
+
+fn start_server() {
+  app.listen(port, () => {
+    log(`Server running at http://localhost:${port}`)
+  })
+}
+
+start_server()
