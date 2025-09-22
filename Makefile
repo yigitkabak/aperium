@@ -10,7 +10,7 @@ build:
 	@echo "Running npm run build..."
 	npm run build
 	@echo "Giving aper executable permissions..."
-	sudo chmod +x $(npm bin -g)/aper
+	@sudo chmod +x /usr/local/bin/aper
 	@echo "Finish."
 
 clean:
