@@ -9,6 +9,8 @@ install:
 build:
 	@echo "Running npm run build..."
 	npm run build
+	@echo "Giving aper executable permissions..."
+	sudo chmod +x $(npm bin -g)/aper
 	@echo "Finish."
 
 clean:
