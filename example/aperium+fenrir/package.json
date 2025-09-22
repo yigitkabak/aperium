@@ -1,0 +1,17 @@
+{
+  "name": "fenrir-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.fnr",
+  "scripts": {
+    "start": "fenrir app.fnr"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0",
+    "fs-extra": "^11.3.2",
+    "hello-world": "file:./aperium_modules/hello-world"
+  },
+  "type": "module"
+}
